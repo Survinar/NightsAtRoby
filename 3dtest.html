@@ -1070,6 +1070,19 @@
                     }
                 }
 
+                // Player Target (Zombie) Collision
+                for (let t of targets) {
+                    const dx = playerPos.x - t.position.x;
+                    const dz = playerPos.z - t.position.z;
+                    const dist = Math.hypot(dx, dz);
+                    const minDist = t.userData.isBoss ? 2.5 : 1.2; // Larger collision for boss
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        playerPos.x += (dx / dist) * overlap;
+                        playerPos.z += (dz / dist) * overlap;
+                    }
+                }
+
                 // Stealth Check
                 let inBush = false;
                 for (let b of bushPositions) {
