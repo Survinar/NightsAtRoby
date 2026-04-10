@@ -999,25 +999,55 @@
 
                 const oldX = controls.getObject().position.x;
                 controls.moveRight(-velocity.x * delta);
+                
+                // Platform Collision (X)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
                         controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
                         playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
                         controls.getObject().position.x = oldX;
                         velocity.x = 0;
-                        break; // Horizontal X collision
+                        break;
+                    }
+                }
+                // Zombie Collision (X)
+                for (let t of targets) {
+                    const dx = controls.getObject().position.x - t.position.x;
+                    const dz = controls.getObject().position.z - t.position.z;
+                    const dist = Math.hypot(dx, dz);
+                    const minDist = t.userData.isBoss ? 1.8 : 0.8;
+                    const zombieHeadHeight = t.position.y + 2.0;
+                    if (dist < minDist && playerBottom < zombieHeadHeight) {
+                        controls.getObject().position.x = oldX;
+                        velocity.x = 0;
+                        break;
                     }
                 }
 
                 const oldZ = controls.getObject().position.z;
                 controls.moveForward(-velocity.z * delta);
+                
+                // Platform Collision (Z)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
                         controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
                         playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
                         controls.getObject().position.z = oldZ;
                         velocity.z = 0;
-                        break; // Horizontal Z collision
+                        break;
+                    }
+                }
+                // Zombie Collision (Z)
+                for (let t of targets) {
+                    const dx = controls.getObject().position.x - t.position.x;
+                    const dz = controls.getObject().position.z - t.position.z;
+                    const dist = Math.hypot(dx, dz);
+                    const minDist = t.userData.isBoss ? 1.8 : 0.8;
+                    const zombieHeadHeight = t.position.y + 2.0;
+                    if (dist < minDist && playerBottom < zombieHeadHeight) {
+                        controls.getObject().position.z = oldZ;
+                        velocity.z = 0;
+                        break;
                     }
                 }
 
@@ -1070,17 +1100,13 @@
                     }
                 }
 
-                // Player Target (Zombie) Collision
-                for (let t of targets) {
-                    const dx = playerPos.x - t.position.x;
-                    const dz = playerPos.z - t.position.z;
+                // Player Tree Collision
+                for (let tree of treePositions) {
+                    const dx = playerPos.x - tree.x;
+                    const dz = playerPos.z - tree.z;
                     const dist = Math.hypot(dx, dz);
-                    const minDist = t.userData.isBoss ? 1.8 : 0.8; // Reduced width
-                    
-                    // Only collide if within horizontal radius AND player is not jumping over them
-                    // Zombie height is roughly 2.0. Check if player's feet (playerBottom) are below zombie head
-                    const zombieHeadHeight = t.position.y + 2.0; 
-                    if (dist < minDist && dist > 0 && playerBottom < zombieHeadHeight) {
+                    const minDist = 0.5 + tree.radius;
+                    if (dist < minDist && dist > 0) {
                         const overlap = minDist - dist;
                         playerPos.x += (dx / dist) * overlap;
                         playerPos.z += (dz / dist) * overlap;
@@ -1210,7 +1236,9 @@
                     directionToPlayer.y = 0; // Ignore height difference so they don't float/sink
 
                     // Only move if they aren't right on top of the player
-                    if (directionToPlayer.length() > 0.5) {
+                    const currentDist = directionToPlayer.length();
+                    const minAllowedDist = t.userData.isBoss ? 1.8 : 0.8;
+                    if (currentDist > minAllowedDist) {
                         directionToPlayer.normalize();
 
                         // --- DIFFICULTY SCALING ---
