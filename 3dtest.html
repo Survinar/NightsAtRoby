@@ -1075,8 +1075,12 @@
                     const dx = playerPos.x - t.position.x;
                     const dz = playerPos.z - t.position.z;
                     const dist = Math.hypot(dx, dz);
-                    const minDist = t.userData.isBoss ? 2.5 : 1.2; // Larger collision for boss
-                    if (dist < minDist && dist > 0) {
+                    const minDist = t.userData.isBoss ? 1.8 : 0.8; // Reduced width
+                    
+                    // Only collide if within horizontal radius AND player is not jumping over them
+                    // Zombie height is roughly 2.0. Check if player's feet (playerBottom) are below zombie head
+                    const zombieHeadHeight = t.position.y + 2.0; 
+                    if (dist < minDist && dist > 0 && playerBottom < zombieHeadHeight) {
                         const overlap = minDist - dist;
                         playerPos.x += (dx / dist) * overlap;
                         playerPos.z += (dz / dist) * overlap;
