@@ -1292,8 +1292,15 @@
                     const dist2D = Math.hypot(t.position.x - playerPos.x, t.position.z - playerPos.z);
                     if (dist2D < 1.5) {
                         if (!godMode) {
-                            health -= 25 * delta;
-                            document.getElementById('healthValue').innerText = Math.max(0, Math.floor(health));
+                            // Check for cooldown (1 second between hits)
+                            if (!t.userData.lastHitTime) t.userData.lastHitTime = 0;
+                            if (time - t.userData.lastHitTime > 1000) {
+                                const damage = 15 + Math.random() * 5;
+                                health -= damage;
+                                t.userData.lastHitTime = time;
+                                playHitSound(); // Optional: play hit sound when damaged
+                                document.getElementById('healthValue').innerText = Math.max(0, Math.floor(health));
+                            }
 
                             // Game Over State
                             if (health <= 0) {
