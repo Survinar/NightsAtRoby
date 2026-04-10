@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>5 Nights at Roby Bar</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
+    <link rel="manifest" href="./site.webmanifest">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+            background: black;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            pointer-events: none;
+            z-index: 100;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        #health {
+            color: #ff4444;
+        }
+
+        #score {
+            color: #44ff44;
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            transform: translate(-50%, -50%);
+            color: rgba(0, 255, 0, 0.8);
+            font-size: 24px;
+            pointer-events: none;
+            z-index: 100;
+            text-align: center;
+            line-height: 20px;
+            font-weight: bold;
+        }
+
+        #blocker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            cursor: pointer;
+            z-index: 200;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 48px;
+        }
+
+        p {
+            font-size: 20px;
+            color: #ccc;
+        }
+
+        #nukeFlash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 150;
+            transition: opacity 0.1s;
+        }
+
+        #nukeStatus {
+            color: #ffaa00;
+        }
+
+        #minimap-border {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            border: 3px solid rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #bossBarContainer {
+            position: fixed;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 500px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid #333;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+        }
+
+        #bossBarFill {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, #880000, #ff0000);
+            transition: width 0.2s ease-out;
+        }
+
+        #bossBarTitle {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ff4444;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px black;
+            width: 100%;
+            text-align: center;
+        }
+
+        #ammoUI {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            color: white;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 22px;
+            text-align: right;
+            text-shadow: 2px 2px 4px black;
+            z-index: 100;
+        }
+
+        #announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-family: 'Arial Black', sans-serif;
+            font-size: 64px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8);
+            display: none;
+            z-index: 200;
+            pointer-events: none;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+        }
+
+        #powerupUI {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 100;
+        }
+
+        #doubleDamageStatus {
+            color: #ffaa00;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 15px;
+            border-left: 5px solid #ffaa00;
+            border-radius: 2px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="nukeFlash"></div>
+    <div id="ui">
+        <h2 id="health">Health: <span id="healthValue">100</span></h2>
+        <h2 id="score">Score: <span id="scoreValue">0</span></h2>
+        <h2 id="nukeStatus">☢ NUKE [N] - READY</h2>
+    </div>
+    <div id="ammoUI">
+        <h2 id="ammo">AMMO: <span id="ammoValue">15</span> / 15</h2>
+    </div>
+    <div id="minimap-border"></div>
+    <div id="bossBarContainer">
+        <div id="bossBarTitle">CARMEN</div>
+        <div id="bossBarFill"></div>
+    </div>
+    <div id="powerupUI">
+        <div id="doubleDamageStatus">🚬 ADRENALINE: 5.0s</div>
+    </div>
+    <div id="announcement"></div>
+    <div id="crosshair">+</div>
+
+    <div id="blocker">
+        <h1>5 NIGHTS AT ROBY BAR</h1>
+        <p>Click anywhere to start</p>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // VARs
+        let health = 100;
+        let score = 0;
+        let godMode = false;
+        let bossSpawned = false;
+        const bullets = [];
+        const targets = [];
+        const medkits = [];
+        const treePositions = [];
+        const bushPositions = [];
+        let lastTime = performance.now();
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false, isCrouching = false, isJumping = false;
+        const velocity = new THREE.Vector3();
+        const direction = new THREE.Vector3();
+        let velocityY = 0;
+        let canJump = true;
+        const GRAVITY = 30;
+        const JUMP_FORCE = 12;
+        let nukeReady = true;
+        let nukeCooldown = 0;
+        let nukeActive = false;
+        let nukeSphere = null;
+        let nukeTimer = 0;
+        const NUKE_COOLDOWN = 1; // secs
+        const cigarettes = [];
+        let doubleDamageTimer = 0;
+        let damageMultiplier = 1;
+
+        const nukeFlash = document.getElementById('nukeFlash');
+        const nukeStatusEl = document.getElementById('nukeStatus');
+        const bossBarContainer = document.getElementById('bossBarContainer');
+        const bossBarFill = document.getElementById('bossBarFill');
+        const powerupUI = document.getElementById('powerupUI');
+        const doubleDamageStatus = document.getElementById('doubleDamageStatus');
+        const announcementEl = document.getElementById('announcement');
+        const BOSS_MAX_HP = 150;
+        let recoilAmount = 0;
+        let recoilRotation = 0;
+
+        // Audio System
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playShootSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playReloadSound() {
+            if (!audioCtx) return;
+            // Two mechanical clicks
+            [0, 0.2].forEach(delay => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(1200, audioCtx.currentTime + delay);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + delay + 0.05);
+                gain.gain.setValueAtTime(0.05, audioCtx.currentTime + delay);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + delay + 0.05);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(audioCtx.currentTime + delay);
+                osc.stop(audioCtx.currentTime + delay + 0.05);
+            });
+        }
+
+        function playHitSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playPickupSound() {
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.2);
+        }
+
+        function playExplosionSound() {
+            if (!audioCtx) return;
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1; // White noise
+            }
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 2);
+            const gain = audioCtx.createGain();
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+            noise.start();
+        }
+
+        // Ammo / Reloading
+        let ammo = 15;
+        const maxAmmo = 15;
+        let isReloading = false;
+        let reloadProgress = 0; // 0 to 1
+        const ammoValueEl = document.getElementById('ammoValue');
+
+        // texture loader
+        const textureLoader = new THREE.TextureLoader();
+        const zombieFaceTexture1 = textureLoader.load('./zombie_face_1.png');
+        const zombieFaceTexture2 = textureLoader.load('./zombie_face_2.png');
+        const zombieFaceTexture3 = textureLoader.load('./zombie_face_3.png');
+        const zombieFaceTexture4 = textureLoader.load('./zombie_face_4.png');
+        const posterTexture = textureLoader.load('./poster.png');
+        const bossFaceTexture = textureLoader.load('./boss_face.png');
+        const bossTorsoTexture = textureLoader.load('./boss_torso.png');
+        const bossLegsTexture = textureLoader.load('./boss_legs.png');
+        const bossHandsTexture = textureLoader.load('./boss_hands.png');
+
+        // scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x6688aa);
+        scene.fog = new THREE.Fog(0x6688aa, 20, 200);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.y = 1.6;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.autoClear = false;
+        document.body.appendChild(renderer.domElement);
+
+        // minimap 
+        const MINIMAP_LAYER = 1;
+        const mapSize = 200;
+        const mapCamera = new THREE.OrthographicCamera(-80, 80, 80, -80, 1, 1000);
+        mapCamera.position.y = 200;
+        mapCamera.lookAt(0, 0, 0);
+        mapCamera.layers.enable(MINIMAP_LAYER); // layering
+
+        const playerDotGeo = new THREE.ConeGeometry(5, 12, 3);
+        playerDotGeo.rotateX(Math.PI / 2); // neg z
+        const playerDotMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        const playerDot = new THREE.Mesh(playerDotGeo, playerDotMat);
+        playerDot.layers.set(MINIMAP_LAYER); // dot above enemies only visible on minimap
+        scene.add(playerDot);
+
+        // main controls
+        const controls = new PointerLockControls(camera, document.body);
+        const blocker = document.getElementById('blocker');
+
+        blocker.addEventListener('click', () => {
+            initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            controls.lock();
+        });
+        controls.addEventListener('lock', () => blocker.style.display = 'none');
+        controls.addEventListener('unlock', () => blocker.style.display = 'flex');
+        scene.add(controls.getObject());
+
+        // lighting
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.7);
+        scene.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+        dirLight.position.set(20, 50, 20);
+        scene.add(dirLight);
+
+        // envr
+        const floorGeo = new THREE.PlaneGeometry(200, 200, 10, 10);
+        const floorMat = new THREE.MeshPhongMaterial({ color: 0x1a2e12, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeo, floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+
+        const gridHelper = new THREE.GridHelper(200, 100, 0x000000, 0x000000);
+        gridHelper.material.opacity = 0.2;
+        gridHelper.material.transparent = true;
+        scene.add(gridHelper);
+
+        // trees and bushes
+        const treeGeoTrunk = new THREE.CylinderGeometry(0.5, 0.5, 3, 8);
+        const treeMatTrunk = new THREE.MeshPhongMaterial({ color: 0x4a2e15 });
+        const treeGeoLeaves = new THREE.ConeGeometry(2.5, 5, 8);
+        const treeMatLeaves = new THREE.MeshPhongMaterial({ color: 0x2d4c1e });
+
+        function createTree(x, z) {
+            const tree = new THREE.Group();
+            const trunk = new THREE.Mesh(treeGeoTrunk, treeMatTrunk);
+            trunk.position.y = 1.5;
+            tree.add(trunk);
+
+            const leaves = new THREE.Mesh(treeGeoLeaves, treeMatLeaves);
+            leaves.position.y = 4.5;
+            tree.add(leaves);
+
+            tree.position.set(x, 0, z);
+
+            // scaling for variety
+            const scale = 0.7 + Math.random() * 0.8;
+            tree.scale.set(scale, scale, scale);
+
+            scene.add(tree);
+            treePositions.push({ x: x, z: z, radius: 0.8 * scale });
+        }
+
+        // random trees avoiding spawn area
+        for (let i = 0; i < 60; i++) {
+            let x = (Math.random() - 0.5) * 180;
+            let z = (Math.random() - 0.5) * 180;
+            if (Math.abs(x) > 10 || Math.abs(z) > 10) {
+                createTree(x, z);
+            }
+        }
+
+        // small bushes
+        const bushGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+        const bushMat = new THREE.MeshPhongMaterial({ color: 0x3a5c2e });
+        for (let i = 0; i < 40; i++) {
+            let x = (Math.random() - 0.5) * 180;
+            let z = (Math.random() - 0.5) * 180;
+            const bush = new THREE.Mesh(bushGeo, bushMat);
+            bush.position.set(x, 0.75, z);
+            bush.rotation.y = Math.random() * Math.PI;
+            bush.rotation.x = Math.random() * 0.2;
+            bush.scale.setScalar(0.5 + Math.random() * 1.5);
+            scene.add(bush);
+            bushPositions.push({ x: x, z: z, radius: 1.5 * bush.scale.x });
+        }
+        // mountain
+        const platformMeshes = [];
+        const platformBoxes = [];
+
+        function createMountain(x, z, levels) {
+            const mtrl = new THREE.MeshPhongMaterial({ color: 0x4a4a5a }); // gray rock
+            for (let i = 0; i < levels; i++) {
+                const size = (levels - i) * 6;
+                const h = 2; // step height
+                const boxGeo = new THREE.BoxGeometry(size, h, size);
+                const box = new THREE.Mesh(boxGeo, mtrl);
+                box.position.set(x, i * h + (h / 2), z);
+                scene.add(box);
+                platformMeshes.push(box);
+
+                box.updateMatrixWorld();
+                const box3 = new THREE.Box3().setFromObject(box);
+                platformBoxes.push(box3);
+            }
+        }
+
+        // mountains around the scene
+        createMountain(-40, -40, 4);
+        createMountain(40, -50, 3);
+        createMountain(-50, 40, 5);
+        createMountain(50, 50, 4);
+
+        // Poster Wall Setup (North edge of the map)
+        const wallGeo = new THREE.BoxGeometry(20, 30, 2); // Less wide, taller
+        const wallMatGray = new THREE.MeshPhongMaterial({ color: 0x555555 });
+        const wallMatPoster = new THREE.MeshPhongMaterial({ map: posterTexture });
+
+        // Materials for BoxGeometry faces: [+x, -x, +y, -y, +z (front), -z (back)]
+        const wallMaterials = [
+            wallMatGray,   // Right
+            wallMatGray,   // Left
+            wallMatGray,   // Top
+            wallMatGray,   // Bottom
+            wallMatPoster, // Front (Facing center since wall is at -Z)
+            wallMatGray    // Back
+        ];
+
+        const posterWall = new THREE.Mesh(wallGeo, wallMaterials);
+        posterWall.position.set(0, 15, -90); // Raised Y position to keep it grounded
+        scene.add(posterWall);
+
+        posterWall.updateMatrixWorld();
+        platformBoxes.push(new THREE.Box3().setFromObject(posterWall)); // Add hard collision boundary
+
+        // medkit system
+        function createMedkit() {
+            const medkit = new THREE.Group();
+
+            // Beer bottle (Brown Glass)
+            const glassMat = new THREE.MeshPhongMaterial({
+                color: 0x5c2b0e,
+                transparent: true,
+                opacity: 0.9,
+                shininess: 90
+            });
+
+            // Main cylinder
+            const bodyGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.6, 16);
+            const bottleBody = new THREE.Mesh(bodyGeo, glassMat);
+            medkit.add(bottleBody);
+
+            // Tapered neck
+            const neckGeo = new THREE.CylinderGeometry(0.06, 0.2, 0.25, 16);
+            const bottleNeck = new THREE.Mesh(neckGeo, glassMat);
+            bottleNeck.position.y = 0.425;
+            medkit.add(bottleNeck);
+
+            // Top spout
+            const spoutGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.15, 16);
+            const bottleSpout = new THREE.Mesh(spoutGeo, glassMat);
+            bottleSpout.position.y = 0.6;
+            medkit.add(bottleSpout);
+
+            // White label wrapped around
+            const labelGeo = new THREE.CylinderGeometry(0.205, 0.205, 0.25, 16);
+            const labelMat = new THREE.MeshPhongMaterial({ color: 0xffeebb });
+            const label = new THREE.Mesh(labelGeo, labelMat);
+            medkit.add(label);
+
+            // Random position
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 15 + Math.random() * 60;
+            medkit.position.set(
+                Math.cos(angle) * radius,
+                0.5,
+                Math.sin(angle) * radius
+            );
+
+            medkit.userData = { healAmount: 25 };
+            scene.add(medkit);
+            medkits.push(medkit);
+        }
+
+        function createCigarette() {
+            const cig = new THREE.Group();
+
+            // White paper body (Enlarged)
+            const bodyGeo = new THREE.CylinderGeometry(0.12, 0.12, 1.0, 8);
+            const bodyMat = new THREE.MeshPhongMaterial({ color: 0xffffff });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.rotation.x = Math.PI / 2;
+            cig.add(body);
+
+            // Orange filter (Enlarged and positioned correctly)
+            const filterGeo = new THREE.CylinderGeometry(0.121, 0.121, 0.35, 8);
+            const filterMat = new THREE.MeshPhongMaterial({ color: 0xe68a00 });
+            const filter = new THREE.Mesh(filterGeo, filterMat);
+            filter.position.z = 0.325; // Adjusted offset for larger scale
+            filter.rotation.x = Math.PI / 2;
+            cig.add(filter);
+
+            // Glowing cherry tip (Enlarged)
+            const cherryGeo = new THREE.SphereGeometry(0.12, 8, 8);
+            const cherryMat = new THREE.MeshBasicMaterial({ color: 0xff2200 });
+            const cherry = new THREE.Mesh(cherryGeo, cherryMat);
+            cherry.position.z = -0.5; // Adjusted offset for larger scale
+            cig.add(cherry);
+
+            // Random position
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 10 + Math.random() * 80;
+            cig.position.set(
+                Math.cos(angle) * radius,
+                0.3, // Raised slightly for better visibility
+                Math.sin(angle) * radius
+            );
+
+            scene.add(cig);
+            cigarettes.push(cig);
+        }
+
+        // Spawn initial items
+        for (let i = 0; i < 8; i++) createMedkit();
+        for (let i = 0; i < 12; i++) createCigarette();
+
+        // human targets
+        function createHumanTarget() {
+            const humanGroup = new THREE.Group();
+
+            // Randomize between 4 variants
+            const rand = Math.random();
+            let bodyColor, faceTex;
+
+            if (rand < 0.25) {
+                bodyColor = 0xaa2222; // Red
+                faceTex = zombieFaceTexture1;
+            } else if (rand < 0.5) {
+                bodyColor = 0x2986cc; // Blue
+                faceTex = zombieFaceTexture2;
+            } else if (rand < 0.75) {
+                bodyColor = 0xff66bb; // Pink
+                faceTex = zombieFaceTexture3;
+            } else {
+                bodyColor = 0x222222; // Black
+                faceTex = zombieFaceTexture4;
+            }
+
+            const mat = new THREE.MeshPhongMaterial({ color: bodyColor });
+
+            // Head - separate material with zombie face texture
+            const headMat = new THREE.MeshPhongMaterial({ map: faceTex });
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), headMat);
+            head.position.y = 1.8;
+            humanGroup.add(head);
+
+            // Torso
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.4), mat);
+            torso.position.y = 1.15;
+            humanGroup.add(torso);
+
+            // Left Arm
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), mat);
+            leftArm.position.set(-0.5, 1.2, 0);
+            humanGroup.add(leftArm);
+
+            // Right Arm
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), mat);
+            rightArm.position.set(0.5, 1.2, 0);
+            humanGroup.add(rightArm);
+
+            // Left Leg
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), mat);
+            leftLeg.position.set(-0.25, 0.4, 0);
+            humanGroup.add(leftLeg);
+
+            // Right Leg
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), mat);
+            rightLeg.position.set(0.25, 0.4, 0);
+            humanGroup.add(rightLeg);
+
+            // Spawn Position (Keep them slightly further away at start)
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 30 + Math.random() * 20;
+            humanGroup.position.set(
+                Math.cos(angle) * radius,
+                0,
+                Math.sin(angle) * radius
+            );
+
+            // Minimap Red Dot
+            const dotGeo = new THREE.CircleGeometry(4, 8);
+            dotGeo.rotateX(-Math.PI / 2);
+            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            dot.position.y = 150; // High above
+            dot.layers.set(MINIMAP_LAYER);
+            humanGroup.add(dot);
+
+            humanGroup.userData = {
+                hp: 3,
+                speed: Math.random() * 2 + 1.5, // Movement speed towards player
+                originalColor: bodyColor,
+                materialRef: mat, // Store reference to body material for hit flashing
+                headMatRef: headMat // Store reference to head material
+            };
+
+            scene.add(humanGroup);
+            targets.push(humanGroup);
+        }
+
+        // boss target
+        function createBossTarget() {
+            const bossGroup = new THREE.Group();
+
+            const headMat = new THREE.MeshPhongMaterial({ map: bossFaceTexture });
+            const torsoMat = new THREE.MeshPhongMaterial({ map: bossTorsoTexture });
+            const legMat = new THREE.MeshPhongMaterial({ map: bossLegsTexture });
+            const handMat = new THREE.MeshPhongMaterial({ map: bossHandsTexture });
+
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), headMat);
+            head.position.y = 1.8;
+            bossGroup.add(head);
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.4), torsoMat);
+            torso.position.y = 1.15;
+            bossGroup.add(torso);
+
+            const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), handMat);
+            leftArm.position.set(-0.5, 1.2, 0);
+            bossGroup.add(leftArm);
+
+            const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), handMat);
+            rightArm.position.set(0.5, 1.2, 0);
+            bossGroup.add(rightArm);
+
+            const leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat);
+            leftLeg.position.set(-0.25, 0.4, 0);
+            bossGroup.add(leftLeg);
+
+            const rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.8, 0.3), legMat);
+            rightLeg.position.set(0.25, 0.4, 0);
+            bossGroup.add(rightLeg);
+
+            bossGroup.scale.set(3, 3, 3); // Make it huge
+
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 60 + Math.random() * 20;
+            bossGroup.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+
+            // Minimap Purple Dot
+            const dotGeo = new THREE.CircleGeometry(6, 8);
+            dotGeo.rotateX(-Math.PI / 2);
+            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff00ff }));
+            dot.position.y = 50; // Scaled so local Y 50 = world 150
+            dot.layers.set(MINIMAP_LAYER);
+            bossGroup.add(dot);
+
+            bossGroup.userData = {
+                hp: BOSS_MAX_HP,
+                speed: 3.5,
+                isBoss: true,
+                materials: [headMat, torsoMat, legMat, handMat],
+                spawnTime: performance.now() // For invincibility window
+            };
+
+            bossBarContainer.style.display = 'block';
+            bossBarFill.style.width = '100%';
+
+            scene.add(bossGroup);
+            targets.push(bossGroup);
+        }
+
+        // Initial targets
+        for (let i = 0; i < 15; i++) createHumanTarget();
+
+        // --- MOVEMENT LISTENERS ---
+        const onKeyDown = (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyD': moveRight = true; break;
+                case 'Space': isJumping = true; break;
+                case 'ShiftLeft':
+                case 'ShiftRight': isSprinting = true; break;
+                case 'KeyC':
+                case 'ControlLeft': isCrouching = true; break;
+            }
+        };
+        const onKeyUp = (event) => {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyD': moveRight = false; break;
+                case 'Space': isJumping = false; break;
+                case 'ShiftLeft':
+                case 'ShiftRight': isSprinting = false; break;
+                case 'KeyC':
+                case 'ControlLeft': isCrouching = false; break;
+            }
+        };
+        document.addEventListener('keydown', onKeyDown);
+        document.addEventListener('keyup', onKeyUp);
+
+        // --- NUKE SYSTEM ---
+        function triggerNuke() {
+            if (!nukeReady || nukeActive) return;
+            nukeReady = false;
+            nukeActive = true;
+            nukeTimer = 0;
+            nukeCooldown = NUKE_COOLDOWN;
+
+            playExplosionSound();
+
+            // Create the expanding fireball
+            const sphereGeo = new THREE.SphereGeometry(1, 32, 32);
+            const sphereMat = new THREE.MeshBasicMaterial({
+                color: 0xff4400,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            nukeSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            nukeSphere.position.copy(controls.getObject().position);
+            nukeSphere.position.y = 0;
+            scene.add(nukeSphere);
+
+            // Screen flash
+            nukeFlash.style.opacity = '1';
+            setTimeout(() => { nukeFlash.style.transition = 'opacity 2s'; nukeFlash.style.opacity = '0'; }, 200);
+            setTimeout(() => { nukeFlash.style.transition = 'opacity 0.1s'; }, 2500);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyN' && controls.isLocked) triggerNuke();
+            if (e.code === 'KeyR' && controls.isLocked) startReload();
+            if (e.key === '+' || e.key === '=') {
+                godMode = !godMode;
+                if (godMode) {
+                    health = 100;
+                    document.getElementById('healthValue').innerText = health;
+                }
+            }
+        });
+
+        // --- SYSTEM HELPERS ---
+        function updateNukeUI() {
+            if (nukeActive) return; // Nuke handling its own UI during expansion
+            if (nukeReady) {
+                nukeStatusEl.innerText = '☢ NUKE [N] - READY';
+                nukeStatusEl.style.color = '#ffaa00';
+            } else {
+                nukeStatusEl.innerText = `☢ NUKE [N] - ${Math.ceil(nukeCooldown)}s`;
+                nukeStatusEl.style.color = '#666';
+            }
+        }
+
+        function handleEnemyDeath(t, j) {
+            scene.remove(t);
+            targets.splice(j, 1);
+            score += t.userData.isBoss ? 500 : 10;
+            document.getElementById('scoreValue').innerText = score;
+
+            if (score >= 500 && !bossSpawned) {
+                bossSpawned = true;
+                createBossTarget();
+
+                // Centered Announcement
+                announcementEl.innerText = "CARMEN FINAL BOSS SPAWNED!";
+                announcementEl.style.display = 'block';
+
+                setTimeout(() => {
+                    announcementEl.style.display = 'none';
+                }, 4000);
+            }
+
+            if (t.userData.isBoss) {
+                alert('YOU DEFEATED THE BOSS!');
+                bossBarContainer.style.display = 'none';
+            } else if (!nukeActive) {
+                // Only respawn normal targets individually if it wasn't a nuke (nuke resyncs at end)
+                createHumanTarget();
+            }
+        }
+
+        // --- GUN SYSTEM ---
+        const gunGroup = new THREE.Group();
+        const barrelGeo = new THREE.BoxGeometry(0.1, 0.1, 0.6);
+        const barrelMat = new THREE.MeshPhongMaterial({ color: 0x111111 });
+        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+        barrel.position.set(0, 0, -0.2);
+        gunGroup.add(barrel);
+
+        const handleGeo = new THREE.BoxGeometry(0.1, 0.2, 0.15);
+        const handle = new THREE.Mesh(handleGeo, barrelMat);
+        handle.position.set(0, -0.15, 0.05);
+        handle.rotation.x = Math.PI / 8;
+        gunGroup.add(handle);
+
+        gunGroup.position.set(0.3, -0.3, -0.5); // Bottom right of screen
+        camera.add(gunGroup);
+
+        const bulletGeo = new THREE.SphereGeometry(0.08, 8, 8);
+        const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
+        function startReload() {
+            if (isReloading || ammo === maxAmmo) return;
+            isReloading = true;
+            reloadProgress = 0;
+            playReloadSound();
+        }
+
+        document.addEventListener('mousedown', (e) => {
+            if (controls.isLocked) {
+                if (isReloading) return;
+                if (ammo <= 0) {
+                    startReload();
+                    return;
+                }
+
+                playShootSound();
+
+                const bullet = new THREE.Mesh(bulletGeo, bulletMat);
+                // Spawn bullet directly from the camera eye to prevent spawning AHEAD of targets hitting the player
+                bullet.position.setFromMatrixPosition(camera.matrixWorld);
+
+                const shootDir = new THREE.Vector3();
+                camera.getWorldDirection(shootDir);
+
+                bullet.userData.velocity = shootDir.multiplyScalar(80); // Faster bullets
+                bullet.userData.life = 100;
+
+                scene.add(bullet);
+                bullets.push(bullet);
+
+                // Consume ammo
+                ammo--;
+                ammoValueEl.innerText = ammo;
+
+                // Add recoil impulse
+                recoilAmount = 0.15;
+                recoilRotation = 0.2;
+            }
+        });
+
+        // --- WINDOW RESIZE ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- MAIN GAME LOOP ---
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = performance.now();
+            const delta = Math.min((time - lastTime) / 1000, 0.1);
+
+            if (controls.isLocked) {
+                // 1. Player Movement Physics (with Sprint)
+                velocity.x -= velocity.x * 10.0 * delta;
+                velocity.z -= velocity.z * 10.0 * delta;
+
+                direction.z = Number(moveForward) - Number(moveBackward);
+                direction.x = Number(moveRight) - Number(moveLeft);
+                direction.normalize();
+
+                const speedMultiplier = isCrouching ? 0.5 : (isSprinting ? 2.2 : 1.0);
+                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * speedMultiplier * delta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * speedMultiplier * delta;
+
+                const playerRadius = 0.4;
+                const playerBodyHeight = isCrouching ? 0.8 : 1.6;
+                let playerBottom = camera.position.y - playerBodyHeight;
+                let playerTop = camera.position.y + 0.2;
+
+                const oldX = controls.getObject().position.x;
+                controls.moveRight(-velocity.x * delta);
+                for (let p of platformBoxes) {
+                    if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
+                        controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
+                        playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
+                        controls.getObject().position.x = oldX;
+                        velocity.x = 0;
+                        break; // Horizontal X collision
+                    }
+                }
+
+                const oldZ = controls.getObject().position.z;
+                controls.moveForward(-velocity.z * delta);
+                for (let p of platformBoxes) {
+                    if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
+                        controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
+                        playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
+                        controls.getObject().position.z = oldZ;
+                        velocity.z = 0;
+                        break; // Horizontal Z collision
+                    }
+                }
+
+                const playerPos = controls.getObject().position;
+
+                // Jumping physics
+                if (isJumping && canJump) {
+                    velocityY = JUMP_FORCE;
+                    canJump = false;
+                }
+
+                velocityY -= GRAVITY * delta; // Apply gravity
+                camera.position.y += velocityY * delta;
+
+                // Ground level depends on crouching AND platforms
+                playerBottom = camera.position.y - playerBodyHeight;
+                let currentGroundY = 0; // default floor level
+                for (let p of platformBoxes) {
+                    if (playerPos.x + playerRadius > p.min.x && playerPos.x - playerRadius < p.max.x &&
+                        playerPos.z + playerRadius > p.min.z && playerPos.z - playerRadius < p.max.z) {
+                        // Allow stepping up slightly or if landing
+                        if (p.max.y > currentGroundY && playerBottom + 0.25 >= p.max.y) {
+                            currentGroundY = p.max.y;
+                        }
+                    }
+                }
+
+                const targetGroundHeight = currentGroundY + playerBodyHeight;
+                if (camera.position.y <= targetGroundHeight && velocityY <= 0) {
+                    camera.position.y = targetGroundHeight;
+                    velocityY = 0;
+                    canJump = true;
+                } else if (camera.position.y > targetGroundHeight + 0.1) {
+                    // Walked off an edge
+                    canJump = false;
+                }
+
+                const testVar = null;
+
+                // Player Tree Collision
+                for (let tree of treePositions) {
+                    const dx = playerPos.x - tree.x;
+                    const dz = playerPos.z - tree.z;
+                    const dist = Math.hypot(dx, dz);
+                    const minDist = 0.5 + tree.radius;
+                    if (dist < minDist && dist > 0) {
+                        const overlap = minDist - dist;
+                        playerPos.x += (dx / dist) * overlap;
+                        playerPos.z += (dz / dist) * overlap;
+                    }
+                }
+
+                // Stealth Check
+                let inBush = false;
+                for (let b of bushPositions) {
+                    if (Math.hypot(b.x - playerPos.x, b.z - playerPos.z) < b.radius) {
+                        inBush = true; break;
+                    }
+                }
+                const isHidden = isCrouching && inBush;
+
+                // Medkit Pickup Check
+                for (let i = medkits.length - 1; i >= 0; i--) {
+                    const mk = medkits[i];
+                    // Float and rotate animation
+                    mk.position.y = 0.5 + Math.sin(time * 0.003 + i) * 0.15;
+                    mk.rotation.y += 1.5 * delta;
+
+                    const dist = Math.hypot(mk.position.x - playerPos.x, mk.position.z - playerPos.z);
+                    if (dist < 1.5) {
+                        health = Math.min(100, health + mk.userData.healAmount);
+                        document.getElementById('healthValue').innerText = Math.floor(health);
+                        playPickupSound();
+                        scene.remove(mk);
+                        medkits.splice(i, 1);
+                        // Respawn a new one elsewhere
+                        createMedkit();
+                    }
+                }
+
+                // Cigarette Pickup Check
+                for (let i = cigarettes.length - 1; i >= 0; i--) {
+                    const cig = cigarettes[i];
+                    cig.rotation.y += 2 * delta;
+                    cig.position.y = 0.2 + Math.sin(time * 0.005 + i) * 0.1;
+
+                    const dist = Math.hypot(cig.position.x - playerPos.x, cig.position.z - playerPos.z);
+                    if (dist < 1.2) {
+                        doubleDamageTimer = 5;
+                        damageMultiplier = 2;
+                        powerupUI.style.display = 'flex';
+                        playPickupSound();
+
+                        scene.remove(cig);
+                        cigarettes.splice(i, 1);
+                        createCigarette();
+                    }
+                }
+
+                // 2. Bullet Physics & Collision Detection
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const b = bullets[i];
+                    b.position.addScaledVector(b.userData.velocity, delta);
+                    b.userData.life--;
+
+                    let hit = false;
+
+                    // Check collisions
+                    for (let j = targets.length - 1; j >= 0; j--) {
+                        const t = targets[j];
+
+                        // Fast mathematical cylinder collision (Ignores the high-altitude map icons)
+                        const dx = b.position.x - t.position.x;
+                        const dz = b.position.z - t.position.z;
+                        const dy = b.position.y - t.position.y;
+                        const dist2D = Math.hypot(dx, dz);
+
+                        // Humanoid Hitbox (Dynamic scale for boss)
+                        const radiusThreshold = t.userData.isBoss ? 1.5 : 0.5;
+                        const heightThreshold = t.userData.isBoss ? 6.6 : 2.2;
+
+                        if (dist2D < radiusThreshold && dy >= 0 && dy <= heightThreshold) {
+                            // Boss invincibility window (3 seconds)
+                            if (t.userData.isBoss && performance.now() - t.userData.spawnTime < 3000) break;
+
+                            hit = true;
+                            t.userData.hp -= damageMultiplier;
+                            playHitSound();
+
+                            // Update Boss Bar
+                            if (t.userData.isBoss) {
+                                const healthPct = (t.userData.hp / BOSS_MAX_HP) * 100;
+                                bossBarFill.style.width = Math.max(0, healthPct) + '%';
+                            }
+
+                            // Flash when hit
+                            if (t.userData.isBoss) {
+                                t.userData.materials.forEach(m => m.color.setHex(0xff0000)); // Flash red
+                                setTimeout(() => {
+                                    if (t && t.userData.materials) {
+                                        t.userData.materials.forEach(m => m.color.setHex(0xffffff)); // Restore white tint (shows texture)
+                                    }
+                                }, 100);
+                            } else {
+                                t.userData.materialRef.color.setHex(0xffffff); // Flash white
+                                setTimeout(() => {
+                                    if (t && t.userData.materialRef) {
+                                        t.userData.materialRef.color.setHex(t.userData.originalColor);
+                                    }
+                                }, 100);
+                            }
+
+                            if (t.userData.hp <= 0) {
+                                handleEnemyDeath(t, j);
+                            }
+                            break;
+                        }
+                    }
+
+                    if (hit || b.userData.life <= 0) {
+                        scene.remove(b);
+                        bullets.splice(i, 1);
+                    }
+                }
+
+                // 3. Target Chasing Logic & Player Damage
+
+                targets.forEach(t => {
+                    if (isHidden) return; // Zombies lose interest and stop moving
+
+                    // Calculate direction from target to player
+                    const directionToPlayer = new THREE.Vector3().subVectors(playerPos, t.position);
+                    directionToPlayer.y = 0; // Ignore height difference so they don't float/sink
+
+                    // Only move if they aren't right on top of the player
+                    if (directionToPlayer.length() > 0.5) {
+                        directionToPlayer.normalize();
+
+                        // --- DIFFICULTY SCALING ---
+                        // Enemies get faster as your score increases (Base speed + score / 350)
+                        const difficultyBoost = score / 350;
+                        const scaledSpeed = t.userData.speed + difficultyBoost;
+
+                        // Move target with scaled speed
+                        t.position.addScaledVector(directionToPlayer, scaledSpeed * delta);
+
+                        // Zombie-Zombie Collision Check (Soft push)
+                        for (let other of targets) {
+                            if (other !== t) {
+                                const dx = t.position.x - other.position.x;
+                                const dz = t.position.z - other.position.z;
+                                const dist = Math.hypot(dx, dz);
+                                const minDist = 0.8; // Approximate zombie collision radius
+                                if (dist < minDist && dist > 0) {
+                                    const overlap = minDist - dist;
+                                    // Push apart (each handles half the overlap so they repel smoothly)
+                                    t.position.x += (dx / dist) * overlap * 0.5;
+                                    t.position.z += (dz / dist) * overlap * 0.5;
+                                }
+                            }
+                        }
+
+                        // Zombie Tree Collision Check (Hard boundary)
+                        for (let tree of treePositions) {
+                            const dx = t.position.x - tree.x;
+                            const dz = t.position.z - tree.z;
+                            const dist = Math.hypot(dx, dz);
+                            const minDist = 0.4 + tree.radius;
+                            if (dist < minDist && dist > 0) {
+                                const overlap = minDist - dist;
+                                t.position.x += (dx / dist) * overlap;
+                                t.position.z += (dz / dist) * overlap;
+                            }
+                        }
+
+                        // Zombie Mountain Collision Check (Hard boundary)
+                        for (let p of platformBoxes) {
+                            if (t.position.x + 0.4 > p.min.x && t.position.x - 0.4 < p.max.x &&
+                                t.position.z + 0.4 > p.min.z && t.position.z - 0.4 < p.max.z) {
+                                // If zombie is below the top of the platform (wall hit)
+                                if (t.position.y < p.max.y - 0.1) {
+                                    // Calculate depths of penetration on all 4 sides
+                                    const overlapLeft = (t.position.x + 0.4) - p.min.x;
+                                    const overlapRight = p.max.x - (t.position.x - 0.4);
+                                    const overlapFront = (t.position.z + 0.4) - p.min.z;
+                                    const overlapBack = p.max.z - (t.position.z - 0.4);
+
+                                    // Find which side is the shallowest to push them out of
+                                    const minOverlap = Math.min(overlapLeft, overlapRight, overlapFront, overlapBack);
+
+                                    // Snap position out instantly
+                                    if (minOverlap === overlapLeft) t.position.x -= overlapLeft;
+                                    else if (minOverlap === overlapRight) t.position.x += overlapRight;
+                                    else if (minOverlap === overlapFront) t.position.z -= overlapFront;
+                                    else if (minOverlap === overlapBack) t.position.z += overlapBack;
+                                }
+                            }
+                        }
+
+
+                        // Make target face player before calculating animation
+                        t.lookAt(playerPos.x, t.position.y, playerPos.z);
+
+                        // --- WALKING ANIMATION (Bobbing & Arm Swinging) ---
+                        const walkSpeed = t.userData.isBoss ? 4 : 8; // Boss bobs slower/heavy
+                        const bobAmount = t.userData.isBoss ? 0.3 : 0.1;
+                        const walkCycle = Math.sin(time * 0.001 * walkSpeed);
+
+                        // Vertical bobbing (use absolute to stay above ground)
+                        const bobOffset = Math.abs(walkCycle) * bobAmount;
+
+                        // Arm swinging (Arms are meshes at children index 2 and 3)
+                        if (t.children[2]) t.children[2].rotation.x = walkCycle * 0.5;
+                        if (t.children[3]) t.children[3].rotation.x = -walkCycle * 0.5;
+
+                        // Zombie Vertical Height (Terrain Tracking + Bobbing)
+                        let tGroundY = 0;
+                        for (let p of platformBoxes) {
+                            if (t.position.x + 0.4 > p.min.x && t.position.x - 0.4 < p.max.x &&
+                                t.position.z + 0.4 > p.min.z && t.position.z - 0.4 < p.max.z) {
+                                if (p.max.y > tGroundY && t.position.y + 0.5 >= p.max.y) {
+                                    tGroundY = p.max.y;
+                                }
+                            }
+                        }
+
+                        // Apply smoothing target height with the bob offset
+                        const targetY = tGroundY + bobOffset;
+                        t.position.y += (targetY - t.position.y) * 10 * delta;
+                    }
+
+                    // Check if target is close enough to damage player
+                    const dist2D = Math.hypot(t.position.x - playerPos.x, t.position.z - playerPos.z);
+                    if (dist2D < 1.5) {
+                        if (!godMode) {
+                            health -= 25 * delta;
+                            document.getElementById('healthValue').innerText = Math.max(0, Math.floor(health));
+
+                            // Game Over State
+                            if (health <= 0) {
+                                controls.unlock();
+                                setTimeout(() => {
+                                    alert(`You survived until scoring: ${score}`);
+                                    health = 100;
+                                    score = 0;
+                                    document.getElementById('healthValue').innerText = health;
+                                    document.getElementById('scoreValue').innerText = score;
+
+                                    // Reset player position
+                                    controls.getObject().position.set(0, 1.6, 0);
+
+                                    // Push enemies back
+                                    targets.forEach(enemy => {
+                                        const angle = Math.random() * Math.PI * 2;
+                                        const radius = 30 + Math.random() * 20;
+                                        enemy.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
+                                    });
+                                }, 10);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 1. Render Main Scene
+            renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+            renderer.setScissor(0, 0, window.innerWidth, window.innerHeight);
+            renderer.setScissorTest(false);
+            renderer.clear();
+            renderer.render(scene, camera);
+
+            // 2. Render Minimap
+            // Update Player dot
+            const playerPosForMap = controls.getObject().position;
+            playerDot.position.x = playerPosForMap.x;
+            playerDot.position.z = playerPosForMap.z;
+            playerDot.position.y = 150;
+            const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
+            playerDot.rotation.y = euler.y;
+
+            // Update Map Camera position
+            mapCamera.position.x = playerPosForMap.x;
+            mapCamera.position.z = playerPosForMap.z;
+
+            // Render minimap over scene
+            const padding = 20;
+            const vx = window.innerWidth - mapSize - padding;
+            const vy = window.innerHeight - mapSize - padding;
+
+            renderer.setViewport(vx, vy, mapSize, mapSize);
+            renderer.setScissor(vx, vy, mapSize, mapSize);
+            renderer.setScissorTest(true);
+
+            // Temporarily disable fog so the high-altitude map camera can see the ground
+            const oldFog = scene.fog;
+            scene.fog = null;
+
+            renderer.render(scene, mapCamera);
+
+            // Restore fog for the next main frame
+            scene.fog = oldFog;
+
+            // --- RELOAD ANIMATION ---
+            let reloadYOffset = 0;
+            let reloadRotX = 0;
+            if (isReloading) {
+                reloadProgress += delta / 1.5; // 1.5s reload
+                if (reloadProgress >= 1.0) {
+                    isReloading = false;
+                    ammo = maxAmmo;
+                    ammoValueEl.innerText = ammo;
+                    reloadProgress = 0;
+                }
+
+                // Cinematic dip animation (parabolic)
+                const dip = Math.sin(reloadProgress * Math.PI);
+                reloadYOffset = -dip * 0.4;
+                reloadRotX = -dip * Math.PI / 4;
+            }
+
+            // --- RECOIL ANIMATION ---
+            recoilAmount = THREE.MathUtils.lerp(recoilAmount, 0, 10 * delta);
+            recoilRotation = THREE.MathUtils.lerp(recoilRotation, 0, 10 * delta);
+
+            // Power-up Cooldown
+            if (doubleDamageTimer > 0) {
+                doubleDamageTimer -= delta;
+                doubleDamageStatus.innerText = `🚬 ADRENALINE: ${doubleDamageTimer.toFixed(1)}s`;
+                if (doubleDamageTimer <= 0) {
+                    doubleDamageTimer = 0;
+                    damageMultiplier = 1;
+                    powerupUI.style.display = 'none';
+                }
+            }
+
+            // Apply recoil & reload to gunGroup
+            if (typeof gunGroup !== 'undefined') {
+                gunGroup.position.set(0.3, -0.3 + recoilAmount * 0.5 + reloadYOffset, -0.5 + recoilAmount);
+                gunGroup.rotation.x = -recoilRotation + reloadRotX;
+            }
+
+            // Nuke cooldown timer
+            if (!nukeReady && !nukeActive) {
+                nukeCooldown -= delta;
+                if (nukeCooldown <= 0) {
+                    nukeReady = true;
+                }
+                updateNukeUI();
+            }
+
+            // Nuke expansion animation
+            if (nukeActive && nukeSphere) {
+                nukeTimer += delta;
+                const maxRadius = 120;
+                const expandSpeed = 60;
+                const currentRadius = nukeTimer * expandSpeed;
+                nukeSphere.scale.setScalar(currentRadius);
+                nukeSphere.material.opacity = Math.max(0, 0.8 - (currentRadius / maxRadius) * 0.8);
+
+                // Camera shake
+                const shakeIntensity = Math.max(0, 0.15 - nukeTimer * 0.05);
+                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
+                camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+
+                // Kill all enemies caught in the blast radius
+                for (let j = targets.length - 1; j >= 0; j--) {
+                    const t = targets[j];
+                    const dist = Math.hypot(t.position.x - nukeSphere.position.x, t.position.z - nukeSphere.position.z);
+                    if (dist < currentRadius) {
+                        // Boss invincibility window (3 seconds)
+                        if (t.userData.isBoss && performance.now() - t.userData.spawnTime < 3000) continue;
+                        handleEnemyDeath(t, j);
+                    }
+                }
+
+                // End nuke after it reaches max radius
+                if (currentRadius >= maxRadius) {
+                    scene.remove(nukeSphere);
+                    nukeSphere = null;
+                    nukeActive = false;
+                    updateNukeUI();
+                    // Respawn fresh enemies
+                    for (let i = 0; i < 15; i++) createHumanTarget();
+                }
+            }
+
+            lastTime = time;
+        }
+
+        animate();
+    </script>
+</body>
+
+</html>
