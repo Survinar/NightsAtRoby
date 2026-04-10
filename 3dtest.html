@@ -457,6 +457,33 @@
         gridHelper.material.transparent = true;
         scene.add(gridHelper);
 
+        // mountain
+        const platformMeshes = [];
+        const platformBoxes = [];
+
+        function createMountain(x, z, levels) {
+            const mtrl = new THREE.MeshPhongMaterial({ color: 0x4a4a5a }); // gray rock
+            for (let i = 0; i < levels; i++) {
+                const size = (levels - i) * 6;
+                const h = 2; // step height
+                const boxGeo = new THREE.BoxGeometry(size, h, size);
+                const box = new THREE.Mesh(boxGeo, mtrl);
+                box.position.set(x, i * h + (h / 2), z);
+                scene.add(box);
+                platformMeshes.push(box);
+
+                box.updateMatrixWorld();
+                const box3 = new THREE.Box3().setFromObject(box);
+                platformBoxes.push(box3);
+            }
+        }
+
+        // mountains around the scene
+        createMountain(-40, -40, 4);
+        createMountain(40, -50, 3);
+        createMountain(-50, 40, 5);
+        createMountain(50, 50, 4);
+
         // trees and bushes
         const treeGeoTrunk = new THREE.CylinderGeometry(0.5, 0.5, 3, 8);
         const treeMatTrunk = new THREE.MeshPhongMaterial({ color: 0x4a2e15 });
@@ -488,7 +515,18 @@
             let x = (Math.random() - 0.5) * 180;
             let z = (Math.random() - 0.5) * 180;
             if (Math.abs(x) > 10 || Math.abs(z) > 10) {
-                createTree(x, z);
+                // Check if inside mountain
+                const point = new THREE.Vector3(x, 0, z);
+                let insideMountain = false;
+                for (let box of platformBoxes) {
+                    if (box.containsPoint(point)) {
+                        insideMountain = true;
+                        break;
+                    }
+                }
+                if (!insideMountain) {
+                    createTree(x, z);
+                }
             }
         }
 
@@ -498,6 +536,18 @@
         for (let i = 0; i < 40; i++) {
             let x = (Math.random() - 0.5) * 180;
             let z = (Math.random() - 0.5) * 180;
+            
+            // Check if inside mountain
+            const point = new THREE.Vector3(x, 0, z);
+            let insideMountain = false;
+            for (let box of platformBoxes) {
+                if (box.containsPoint(point)) {
+                    insideMountain = true;
+                    break;
+                }
+            }
+            if (insideMountain) continue;
+
             const bush = new THREE.Mesh(bushGeo, bushMat);
             bush.position.set(x, 0.75, z);
             bush.rotation.y = Math.random() * Math.PI;
@@ -506,32 +556,6 @@
             scene.add(bush);
             bushPositions.push({ x: x, z: z, radius: 1.5 * bush.scale.x });
         }
-        // mountain
-        const platformMeshes = [];
-        const platformBoxes = [];
-
-        function createMountain(x, z, levels) {
-            const mtrl = new THREE.MeshPhongMaterial({ color: 0x4a4a5a }); // gray rock
-            for (let i = 0; i < levels; i++) {
-                const size = (levels - i) * 6;
-                const h = 2; // step height
-                const boxGeo = new THREE.BoxGeometry(size, h, size);
-                const box = new THREE.Mesh(boxGeo, mtrl);
-                box.position.set(x, i * h + (h / 2), z);
-                scene.add(box);
-                platformMeshes.push(box);
-
-                box.updateMatrixWorld();
-                const box3 = new THREE.Box3().setFromObject(box);
-                platformBoxes.push(box3);
-            }
-        }
-
-        // mountains around the scene
-        createMountain(-40, -40, 4);
-        createMountain(40, -50, 3);
-        createMountain(-50, 40, 5);
-        createMountain(50, 50, 4);
 
         // Poster Wall Setup (North edge of the map)
         const wallGeo = new THREE.BoxGeometry(20, 30, 2); // Less wide, taller
