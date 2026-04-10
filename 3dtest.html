@@ -484,6 +484,25 @@
         createMountain(-50, 40, 5);
         createMountain(50, 50, 4);
 
+        // Map Borders (Transparent Walls)
+        const wallMatInvisible = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+        function createBorderWall(width, height, depth, x, y, z) {
+            const wallGeo = new THREE.BoxGeometry(width, height, depth);
+            const wall = new THREE.Mesh(wallGeo, wallMatInvisible);
+            wall.position.set(x, y, z);
+            scene.add(wall);
+            
+            wall.updateMatrixWorld();
+            const box3 = new THREE.Box3().setFromObject(wall);
+            platformBoxes.push(box3);
+        }
+
+        // 200x200 map, so edges are at +/- 100
+        createBorderWall(204, 20, 2, 0, 10, -101); // North
+        createBorderWall(204, 20, 2, 0, 10, 101);  // South
+        createBorderWall(2, 20, 204, -101, 10, 0); // West
+        createBorderWall(2, 20, 204, 101, 10, 0);  // East
+
         // trees and bushes
         const treeGeoTrunk = new THREE.CylinderGeometry(0.5, 0.5, 3, 8);
         const treeMatTrunk = new THREE.MeshPhongMaterial({ color: 0x4a2e15 });
