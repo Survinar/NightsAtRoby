@@ -10,6 +10,11 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
     <link rel="manifest" href="./site.webmanifest">
+    
+    <!-- iOS Safari Standalone Mode -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Roby Bar">
     <style>
         * {
             margin: 0;
@@ -22,6 +27,8 @@
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
+            -webkit-user-select: none; /* Safari unique selection disable */
+            -webkit-touch-callout: none; /* Disable Safari long-press menu */
             background: black;
             touch-action: none; /* Forcefully disable browser zoom/pan/scroll */
         }
@@ -325,6 +332,9 @@
     <div id="orientationOverlay">
         <h2>🔄 Landscape Mode Required</h2>
         <p>Please rotate your device to play!</p>
+        <p id="safariTip" style="font-size: 14px; margin-top: 20px; color: #ffaa00; display: none;">
+            Safari Tip: Use <b>Add to Home Screen</b> to hide browser bars!
+        </p>
     </div>
 
     <script type="importmap">
@@ -393,6 +403,13 @@
         if (isMobile) {
             mobileControls.style.display = 'block';
             startInstructions.innerText = 'Tap to enter Fullscreen and Start';
+
+            // Safari Standalone check
+            const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+            const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+            if (isIOS && !isStandalone) {
+                document.getElementById('safariTip').style.display = 'block';
+            }
         }
 
         // Audio System
