@@ -353,9 +353,14 @@
                 border-left-width: 3px;
             }
 
-            #ammoUI h2 {
-                font-size: 18px;
+            #ammoUI {
+                display: none;
             }
+
+            #btnShoot { bottom: 40px; right: 50px; width: 100px; height: 100px; }
+            #btnJump { bottom: 155px; right: 60px; }
+            #btnReload { bottom: 155px; right: 160px; }
+            #btnNuke { bottom: 40px; right: 170px; }
 
             #bossBarContainer {
                 width: 300px;
@@ -1163,7 +1168,19 @@
                 const timer = Math.ceil(nukeCooldown);
                 nukeStatusEl.innerText = `☢ NUKE [N] - ${timer}s`;
                 nukeStatusEl.style.color = '#666';
-                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`; // Added newline for mobile fit
+                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`; 
+            }
+        }
+
+        const btnReload = document.getElementById('btnReload');
+        function updateAmmoUI() {
+            ammoValueEl.innerText = ammo;
+            if (isMobile) {
+                if (isReloading) {
+                    btnReload.innerText = 'RELOADING...';
+                } else {
+                    btnReload.innerText = `RELOAD\n(${ammo}/15)`;
+                }
             }
         }
 
@@ -1219,6 +1236,7 @@
             if (isReloading || ammo === maxAmmo) return;
             isReloading = true;
             reloadProgress = 0;
+            updateAmmoUI();
             playReloadSound();
         }
 
@@ -1245,7 +1263,7 @@
             bullets.push(bullet);
 
             ammo--;
-            ammoValueEl.innerText = ammo;
+            updateAmmoUI();
             recoilAmount = 0.15;
             recoilRotation = 0.2;
         }
@@ -1702,7 +1720,7 @@
                 if (reloadProgress >= 1.0) {
                     isReloading = false;
                     ammo = maxAmmo;
-                    ammoValueEl.innerText = ammo;
+                    updateAmmoUI();
                     reloadProgress = 0;
                 }
 
