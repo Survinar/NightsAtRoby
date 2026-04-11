@@ -567,7 +567,7 @@
         camera.rotation.order = 'YXZ'; // Essential for FPS-style controls to prevent sideways tilt
         camera.position.y = 1.6;
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.autoClear = false;
         document.body.appendChild(renderer.domElement);
@@ -596,11 +596,12 @@
         maskShape.lineTo(-500, -500);
 
         const maskHole = new THREE.Path();
-        maskHole.absarc(0, 0, 78, 0, Math.PI * 2, true); // 80 is map radius, 78 covers edge
+        const maskRadius = isMobile ? 54 : 98; // Slightly smaller than half-size to hide edges
+        maskHole.absarc(0, 0, maskRadius, 0, Math.PI * 2, true); 
         maskShape.holes.push(maskHole);
 
         const maskGeo = new THREE.ShapeGeometry(maskShape);
-        const maskMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.9 });
+        const maskMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false });
         const mapMask = new THREE.Mesh(maskGeo, maskMat);
         mapMask.rotateX(-Math.PI / 2);
         mapMask.position.y = 195; // Just below camera
@@ -1655,13 +1656,15 @@
             }
 
             // Render minimap over scene
-            const padding = 20;
-            const vx = window.innerWidth - currentMapSize - padding;
-            const vy = window.innerHeight - currentMapSize - padding;
+            const currentPadding = isMobile ? 10 : 20;
+            const vx = window.innerWidth - currentMapSize - currentPadding;
+            const vy = window.innerHeight - currentMapSize - currentPadding;
 
+            renderer.setClearColor(0x000000, 0); // Transparent for corners
             renderer.setViewport(vx, vy, currentMapSize, currentMapSize);
             renderer.setScissor(vx, vy, currentMapSize, currentMapSize);
             renderer.setScissorTest(true);
+            renderer.clearDepth(); // Clear depth so minimap appears on top correctly
 
             // Temporarily disable fog so the high-altitude map camera can see the ground
             const oldFog = scene.fog;
