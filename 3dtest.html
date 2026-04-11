@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>5 Nights at Roby Bar</title>
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -381,6 +382,7 @@
         const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0);
         let touchLookId = null;
         let touchMoveId = null;
+        let lastTouchLook = { x: 0, y: 0 };
         let joystickStart = { x: 0, y: 0 };
         let joystickVector = { x: 0, y: 0 };
         const mobileControls = document.getElementById('mobileControls');
@@ -1677,8 +1679,8 @@
                         // Right half look
                         if (touchLookId === null) {
                             touchLookId = t.identifier;
-                            t.lastX = t.clientX;
-                            t.lastY = t.clientY;
+                            lastTouchLook.x = t.clientX;
+                            lastTouchLook.y = t.clientY;
                         }
                     }
                 }
@@ -1705,16 +1707,15 @@
                         moveRight = joystickVector.x > 0.3;
                     } else if (t.identifier === touchLookId) {
                         // Look logic - manually rotate camera
-                        // PointerLockControls is for mouse, so we'll bypass it for look
-                        const movementX = t.clientX - (t.lastX || t.clientX);
-                        const movementY = t.clientY - (t.lastY || t.clientY);
+                        const movementX = t.clientX - lastTouchLook.x;
+                        const movementY = t.clientY - lastTouchLook.y;
                         
                         camera.rotation.y -= movementX * 0.005;
                         camera.rotation.x -= movementY * 0.005;
                         camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
                         
-                        t.lastX = t.clientX;
-                        t.lastY = t.clientY;
+                        lastTouchLook.x = t.clientX;
+                        lastTouchLook.y = t.clientY;
                     }
                 }
             }, { passive: false });
