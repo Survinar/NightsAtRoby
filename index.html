@@ -269,8 +269,11 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            text-align: center; /* Ensure multi-line text is centered */
+            padding: 5px; /* Prevent text touching edges */
+            box-sizing: border-box;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px; /* Slightly smaller for better fit */
             pointer-events: auto;
             text-transform: uppercase;
         }
@@ -1133,7 +1136,10 @@
         // --- SYSTEM HELPERS ---
         const btnNuke = document.getElementById('btnNuke');
         function updateNukeUI() {
-            if (nukeActive) return; // Nuke handling its own UI during expansion
+            if (nukeActive) {
+                if (isMobile) btnNuke.innerText = 'ACTIVE';
+                return;
+            }
             if (nukeReady) {
                 nukeStatusEl.innerText = '☢ NUKE [N] - READY';
                 nukeStatusEl.style.color = '#ffaa00';
@@ -1142,7 +1148,7 @@
                 const timer = Math.ceil(nukeCooldown);
                 nukeStatusEl.innerText = `☢ NUKE [N] - ${timer}s`;
                 nukeStatusEl.style.color = '#666';
-                if (isMobile) btnNuke.innerText = `NUKE (${timer}s)`;
+                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`; // Added newline for mobile fit
             }
         }
 
