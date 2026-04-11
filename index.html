@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
     <link rel="manifest" href="./site.webmanifest">
-    
+
     <!-- iOS Safari Standalone Mode -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,10 +27,13 @@
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
-            -webkit-user-select: none; /* Safari unique selection disable */
-            -webkit-touch-callout: none; /* Disable Safari long-press menu */
+            -webkit-user-select: none;
+            /* Safari unique selection disable */
+            -webkit-touch-callout: none;
+            /* Disable Safari long-press menu */
             background: black;
-            touch-action: none; /* Forcefully disable browser zoom/pan/scroll */
+            touch-action: none;
+            /* Forcefully disable browser zoom/pan/scroll */
         }
 
         #ui {
@@ -265,10 +268,31 @@
             text-transform: uppercase;
         }
 
-        #btnShoot { bottom: 60px; right: 50px; width: 100px; height: 100px; background: rgba(255, 50, 50, 0.3); border-color: rgba(255, 50, 50, 0.6); }
-        #btnJump { bottom: 180px; right: 60px; }
-        #btnReload { bottom: 180px; right: 160px; }
-        #btnNuke { bottom: 60px; right: 170px; background: rgba(255, 170, 0, 0.3); border-color: rgba(255, 170, 0, 0.6); }
+        #btnShoot {
+            bottom: 60px;
+            right: 50px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 50, 50, 0.3);
+            border-color: rgba(255, 50, 50, 0.6);
+        }
+
+        #btnJump {
+            bottom: 180px;
+            right: 60px;
+        }
+
+        #btnReload {
+            bottom: 180px;
+            right: 160px;
+        }
+
+        #btnNuke {
+            bottom: 60px;
+            right: 170px;
+            background: rgba(255, 170, 0, 0.3);
+            border-color: rgba(255, 170, 0, 0.6);
+        }
 
         #orientationOverlay {
             position: fixed;
@@ -300,7 +324,8 @@
             }
 
             #nukeStatus {
-                display: none; /* Already integrated into button */
+                display: none;
+                /* Already integrated into button */
             }
 
             #ammoUI h2 {
@@ -342,7 +367,7 @@
         <div id="bossBarFill"></div>
     </div>
     <div id="powerupUI">
-        <div id="doubleDamageStatus">🚬 ADRENALINE: 5.0s</div>
+        <div id="doubleDamageStatus">🚬 x2 DAMAGE: 5.0s</div>
     </div>
     <div id="announcement"></div>
     <div id="crosshair">+</div>
@@ -597,7 +622,7 @@
 
         const maskHole = new THREE.Path();
         const maskRadius = isMobile ? 54 : 98; // Slightly smaller than half-size to hide edges
-        maskHole.absarc(0, 0, maskRadius, 0, Math.PI * 2, true); 
+        maskHole.absarc(0, 0, maskRadius, 0, Math.PI * 2, true);
         maskShape.holes.push(maskHole);
 
         const maskGeo = new THREE.ShapeGeometry(maskShape);
@@ -690,7 +715,7 @@
             const wall = new THREE.Mesh(wallGeo, wallMatInvisible);
             wall.position.set(x, y, z);
             scene.add(wall);
-            
+
             wall.updateMatrixWorld();
             const box3 = new THREE.Box3().setFromObject(wall);
             platformBoxes.push(box3);
@@ -754,7 +779,7 @@
         for (let i = 0; i < 40; i++) {
             let x = (Math.random() - 0.5) * 180;
             let z = (Math.random() - 0.5) * 180;
-            
+
             // Check if inside mountain
             const point = new THREE.Vector3(x, 0, z);
             let insideMountain = false;
@@ -1246,7 +1271,7 @@
 
                 const oldX = controls.getObject().position.x;
                 controls.moveRight(-velocity.x * delta);
-                
+
                 // Platform Collision (X)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
@@ -1273,7 +1298,7 @@
 
                 const oldZ = controls.getObject().position.z;
                 controls.moveForward(-velocity.z * delta);
-                
+
                 // Platform Collision (Z)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
@@ -1638,7 +1663,7 @@
             playerDot.position.y = 150;
             const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
             playerDot.rotation.y = euler.y;
-            
+
             if (isMobile) {
                 playerDot.scale.setScalar(0.6); // Shrink player icon on smaller map
             } else {
@@ -1648,7 +1673,7 @@
             // Update Map Camera position
             mapCamera.position.x = playerPosForMap.x;
             mapCamera.position.z = playerPosForMap.z;
-            
+
             // Update mask position to stay centered on map
             if (typeof mapMask !== 'undefined') {
                 mapMask.position.x = playerPosForMap.x;
@@ -1794,12 +1819,12 @@
                         const dy = t.clientY - joystickStart.y;
                         const dist = Math.min(60, Math.hypot(dx, dy));
                         const angle = Math.atan2(dy, dx);
-                        
+
                         joystickVector.x = (Math.cos(angle) * dist) / 60;
                         joystickVector.y = (Math.sin(angle) * dist) / 60;
-                        
+
                         joystickStick.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px))`;
-                        
+
                         moveForward = joystickVector.y < -0.3;
                         moveBackward = joystickVector.y > 0.3;
                         moveLeft = joystickVector.x < -0.3;
@@ -1808,7 +1833,7 @@
                         // Look logic - manually rotate camera
                         const movementX = t.clientX - lastTouchLook.x;
                         const movementY = t.clientY - lastTouchLook.y;
-                        
+
                         // Fix: Aiming sensitivity and inversion
                         // movementY is positive when dragging DOWN, so we SUBTRACT it to look UP in FPS math
                         // BUT PointerLock style usually expects subtraction. Let's ensure it's not double-inverted.
@@ -1817,9 +1842,9 @@
                         // Actually, many mobile games use Pull Down = Look Down (Direct mapping).
                         // If user said "turns towards ground", it might be too sensitive or inverted.
                         // Let's use a smaller multiplier and standard mapping.
-                        
+
                         camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
-                        
+
                         lastTouchLook.x = t.clientX;
                         lastTouchLook.y = t.clientY;
                     }
