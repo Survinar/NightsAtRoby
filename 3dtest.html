@@ -10,7 +10,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="./favicon-16x16.png">
     <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
     <link rel="manifest" href="./site.webmanifest">
-    
+
     <!-- iOS Safari Standalone Mode -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,10 +27,13 @@
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
-            -webkit-user-select: none; /* Safari unique selection disable */
-            -webkit-touch-callout: none; /* Disable Safari long-press menu */
+            -webkit-user-select: none;
+            /* Safari unique selection disable */
+            -webkit-touch-callout: none;
+            /* Disable Safari long-press menu */
             background: black;
-            touch-action: none; /* Forcefully disable browser zoom/pan/scroll */
+            touch-action: none;
+            /* Forcefully disable browser zoom/pan/scroll */
         }
 
         #ui {
@@ -117,10 +120,17 @@
             width: 200px;
             height: 200px;
             border: 3px solid rgba(255, 255, 255, 0.7);
-            border-radius: 5px;
+            border-radius: 50%; /* Made circular by default */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             z-index: 100;
+            overflow: hidden; /* Key for circular clipping */
+            background: rgba(0, 0, 0, 0.3); /* Subtle backdrop */
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
         }
 
         #bossBarContainer {
@@ -265,10 +275,31 @@
             text-transform: uppercase;
         }
 
-        #btnShoot { bottom: 60px; right: 50px; width: 100px; height: 100px; background: rgba(255, 50, 50, 0.3); border-color: rgba(255, 50, 50, 0.6); }
-        #btnJump { bottom: 180px; right: 60px; }
-        #btnReload { bottom: 180px; right: 160px; }
-        #btnNuke { bottom: 60px; right: 170px; background: rgba(255, 170, 0, 0.3); border-color: rgba(255, 170, 0, 0.6); }
+        #btnShoot {
+            bottom: 60px;
+            right: 50px;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 50, 50, 0.3);
+            border-color: rgba(255, 50, 50, 0.6);
+        }
+
+        #btnJump {
+            bottom: 180px;
+            right: 60px;
+        }
+
+        #btnReload {
+            bottom: 180px;
+            right: 160px;
+        }
+
+        #btnNuke {
+            bottom: 60px;
+            right: 170px;
+            background: rgba(255, 170, 0, 0.3);
+            border-color: rgba(255, 170, 0, 0.6);
+        }
 
         #orientationOverlay {
             position: fixed;
@@ -300,7 +331,8 @@
             }
 
             #nukeStatus {
-                display: none; /* Already integrated into button */
+                display: none;
+                /* Already integrated into button */
             }
 
             #ammoUI h2 {
@@ -316,8 +348,7 @@
                 width: 110px;
                 height: 110px;
                 border-radius: 50%;
-                background: none;
-                backdrop-filter: none;
+                background: rgba(0, 0, 0, 0.3);
                 border-width: 2px;
                 top: 10px;
                 right: 10px;
@@ -336,13 +367,15 @@
     <div id="ammoUI">
         <h2 id="ammo">AMMO: <span id="ammoValue">15</span> / 15</h2>
     </div>
-    <div id="minimap-border"></div>
+    <div id="minimap-border">
+        <canvas id="minimapCanvas"></canvas>
+    </div>
     <div id="bossBarContainer">
         <div id="bossBarTitle">CARMEN</div>
         <div id="bossBarFill"></div>
     </div>
     <div id="powerupUI">
-        <div id="doubleDamageStatus">🚬 ADRENALINE: 5.0s</div>
+        <div id="doubleDamageStatus">🚬 x2 DAMAGE: 5.0s</div>
     </div>
     <div id="announcement"></div>
     <div id="crosshair">+</div>
@@ -572,6 +605,16 @@
         renderer.autoClear = false;
         document.body.appendChild(renderer.domElement);
 
+        // dedicated minimap renderer
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapRenderer = new THREE.WebGLRenderer({ 
+            canvas: minimapCanvas, 
+            antialias: true,
+            alpha: true 
+        });
+        const mmSize = isMobile ? 110 : 200;
+        minimapRenderer.setSize(mmSize, mmSize);
+
         // minimap 
         const MINIMAP_LAYER = 1;
         const mapSize = 200;
@@ -584,29 +627,8 @@
         playerDotGeo.rotateX(Math.PI / 2); // neg z
         const playerDotMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const playerDot = new THREE.Mesh(playerDotGeo, playerDotMat);
-        playerDot.layers.set(MINIMAP_LAYER); // dot above enemies only visible on minimap
+        playerDot.layers.set(MINIMAP_LAYER); 
         scene.add(playerDot);
-
-        // Minimap Mask (Circular Hole)
-        const maskShape = new THREE.Shape();
-        maskShape.moveTo(-500, -500);
-        maskShape.lineTo(500, -500);
-        maskShape.lineTo(500, 500);
-        maskShape.lineTo(-500, 500);
-        maskShape.lineTo(-500, -500);
-
-        const maskHole = new THREE.Path();
-        const maskRadius = isMobile ? 54 : 98; // Slightly smaller than half-size to hide edges
-        maskHole.absarc(0, 0, maskRadius, 0, Math.PI * 2, true); 
-        maskShape.holes.push(maskHole);
-
-        const maskGeo = new THREE.ShapeGeometry(maskShape);
-        const maskMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false });
-        const mapMask = new THREE.Mesh(maskGeo, maskMat);
-        mapMask.rotateX(-Math.PI / 2);
-        mapMask.position.y = 195; // Just below camera
-        mapMask.layers.set(MINIMAP_LAYER);
-        scene.add(mapMask);
 
         // main controls
         const controls = new PointerLockControls(camera, document.body);
@@ -690,7 +712,7 @@
             const wall = new THREE.Mesh(wallGeo, wallMatInvisible);
             wall.position.set(x, y, z);
             scene.add(wall);
-            
+
             wall.updateMatrixWorld();
             const box3 = new THREE.Box3().setFromObject(wall);
             platformBoxes.push(box3);
@@ -754,7 +776,7 @@
         for (let i = 0; i < 40; i++) {
             let x = (Math.random() - 0.5) * 180;
             let z = (Math.random() - 0.5) * 180;
-            
+
             // Check if inside mountain
             const point = new THREE.Vector3(x, 0, z);
             let insideMountain = false;
@@ -1246,7 +1268,7 @@
 
                 const oldX = controls.getObject().position.x;
                 controls.moveRight(-velocity.x * delta);
-                
+
                 // Platform Collision (X)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
@@ -1273,7 +1295,7 @@
 
                 const oldZ = controls.getObject().position.z;
                 controls.moveForward(-velocity.z * delta);
-                
+
                 // Platform Collision (Z)
                 for (let p of platformBoxes) {
                     if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
@@ -1628,10 +1650,7 @@
             renderer.clear();
             renderer.render(scene, camera);
 
-            // 2. Render Minimap
-            const currentMapSize = isMobile ? 110 : mapSize;
-
-            // Update Player dot
+            // 2. Render Minimap (Dedicated Canvas)
             const playerPosForMap = controls.getObject().position;
             playerDot.position.x = playerPosForMap.x;
             playerDot.position.z = playerPosForMap.z;
@@ -1640,39 +1659,18 @@
             playerDot.rotation.y = euler.y;
             
             if (isMobile) {
-                playerDot.scale.setScalar(0.6); // Shrink player icon on smaller map
+                playerDot.scale.setScalar(0.6); 
             } else {
                 playerDot.scale.setScalar(1.0);
             }
 
-            // Update Map Camera position
             mapCamera.position.x = playerPosForMap.x;
             mapCamera.position.z = playerPosForMap.z;
-            
-            // Update mask position to stay centered on map
-            if (typeof mapMask !== 'undefined') {
-                mapMask.position.x = playerPosForMap.x;
-                mapMask.position.z = playerPosForMap.z;
-            }
 
-            // Render minimap over scene
-            const currentPadding = isMobile ? 10 : 20;
-            const vx = window.innerWidth - currentMapSize - currentPadding;
-            const vy = window.innerHeight - currentMapSize - currentPadding;
-
-            renderer.setClearColor(0x000000, 0); // Transparent for corners
-            renderer.setViewport(vx, vy, currentMapSize, currentMapSize);
-            renderer.setScissor(vx, vy, currentMapSize, currentMapSize);
-            renderer.setScissorTest(true);
-            renderer.clearDepth(); // Clear depth so minimap appears on top correctly
-
-            // Temporarily disable fog so the high-altitude map camera can see the ground
+            // Render to secondary canvas
             const oldFog = scene.fog;
-            scene.fog = null;
-
-            renderer.render(scene, mapCamera);
-
-            // Restore fog for the next main frame
+            scene.fog = null; // Disable fog for minimap view
+            minimapRenderer.render(scene, mapCamera);
             scene.fog = oldFog;
 
             // --- RELOAD ANIMATION ---
@@ -1700,7 +1698,7 @@
             // Power-up Cooldown
             if (doubleDamageTimer > 0) {
                 doubleDamageTimer -= delta;
-                doubleDamageStatus.innerText = `🚬 ADRENALINE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
                 if (doubleDamageTimer <= 0) {
                     doubleDamageTimer = 0;
                     damageMultiplier = 1;
@@ -1794,12 +1792,12 @@
                         const dy = t.clientY - joystickStart.y;
                         const dist = Math.min(60, Math.hypot(dx, dy));
                         const angle = Math.atan2(dy, dx);
-                        
+
                         joystickVector.x = (Math.cos(angle) * dist) / 60;
                         joystickVector.y = (Math.sin(angle) * dist) / 60;
-                        
+
                         joystickStick.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px))`;
-                        
+
                         moveForward = joystickVector.y < -0.3;
                         moveBackward = joystickVector.y > 0.3;
                         moveLeft = joystickVector.x < -0.3;
@@ -1808,7 +1806,7 @@
                         // Look logic - manually rotate camera
                         const movementX = t.clientX - lastTouchLook.x;
                         const movementY = t.clientY - lastTouchLook.y;
-                        
+
                         // Fix: Aiming sensitivity and inversion
                         // movementY is positive when dragging DOWN, so we SUBTRACT it to look UP in FPS math
                         // BUT PointerLock style usually expects subtraction. Let's ensure it's not double-inverted.
@@ -1817,9 +1815,9 @@
                         // Actually, many mobile games use Pull Down = Look Down (Direct mapping).
                         // If user said "turns towards ground", it might be too sensitive or inverted.
                         // Let's use a smaller multiplier and standard mapping.
-                        
+
                         camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
-                        
+
                         lastTouchLook.x = t.clientX;
                         lastTouchLook.y = t.clientY;
                     }

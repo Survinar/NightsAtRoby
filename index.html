@@ -120,10 +120,17 @@
             width: 200px;
             height: 200px;
             border: 3px solid rgba(255, 255, 255, 0.7);
-            border-radius: 5px;
+            border-radius: 50%; /* Made circular by default */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             z-index: 100;
+            overflow: hidden; /* Key for circular clipping */
+            background: rgba(0, 0, 0, 0.3); /* Subtle backdrop */
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
         }
 
         #bossBarContainer {
@@ -341,8 +348,7 @@
                 width: 110px;
                 height: 110px;
                 border-radius: 50%;
-                background: none;
-                backdrop-filter: none;
+                background: rgba(0, 0, 0, 0.3);
                 border-width: 2px;
                 top: 10px;
                 right: 10px;
@@ -361,7 +367,9 @@
     <div id="ammoUI">
         <h2 id="ammo">AMMO: <span id="ammoValue">15</span> / 15</h2>
     </div>
-    <div id="minimap-border"></div>
+    <div id="minimap-border">
+        <canvas id="minimapCanvas"></canvas>
+    </div>
     <div id="bossBarContainer">
         <div id="bossBarTitle">CARMEN</div>
         <div id="bossBarFill"></div>
@@ -597,6 +605,16 @@
         renderer.autoClear = false;
         document.body.appendChild(renderer.domElement);
 
+        // dedicated minimap renderer
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const minimapRenderer = new THREE.WebGLRenderer({ 
+            canvas: minimapCanvas, 
+            antialias: true,
+            alpha: true 
+        });
+        const mmSize = isMobile ? 110 : 200;
+        minimapRenderer.setSize(mmSize, mmSize);
+
         // minimap 
         const MINIMAP_LAYER = 1;
         const mapSize = 200;
@@ -609,29 +627,8 @@
         playerDotGeo.rotateX(Math.PI / 2); // neg z
         const playerDotMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const playerDot = new THREE.Mesh(playerDotGeo, playerDotMat);
-        playerDot.layers.set(MINIMAP_LAYER); // dot above enemies only visible on minimap
+        playerDot.layers.set(MINIMAP_LAYER); 
         scene.add(playerDot);
-
-        // Minimap Mask (Circular Hole)
-        const maskShape = new THREE.Shape();
-        maskShape.moveTo(-500, -500);
-        maskShape.lineTo(500, -500);
-        maskShape.lineTo(500, 500);
-        maskShape.lineTo(-500, 500);
-        maskShape.lineTo(-500, -500);
-
-        const maskHole = new THREE.Path();
-        const maskRadius = isMobile ? 54 : 98; // Slightly smaller than half-size to hide edges
-        maskHole.absarc(0, 0, maskRadius, 0, Math.PI * 2, true);
-        maskShape.holes.push(maskHole);
-
-        const maskGeo = new THREE.ShapeGeometry(maskShape);
-        const maskMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false });
-        const mapMask = new THREE.Mesh(maskGeo, maskMat);
-        mapMask.rotateX(-Math.PI / 2);
-        mapMask.position.y = 195; // Just below camera
-        mapMask.layers.set(MINIMAP_LAYER);
-        scene.add(mapMask);
 
         // main controls
         const controls = new PointerLockControls(camera, document.body);
@@ -1653,51 +1650,27 @@
             renderer.clear();
             renderer.render(scene, camera);
 
-            // 2. Render Minimap
-            const currentMapSize = isMobile ? 110 : mapSize;
-
-            // Update Player dot
+            // 2. Render Minimap (Dedicated Canvas)
             const playerPosForMap = controls.getObject().position;
             playerDot.position.x = playerPosForMap.x;
             playerDot.position.z = playerPosForMap.z;
             playerDot.position.y = 150;
             const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
             playerDot.rotation.y = euler.y;
-
+            
             if (isMobile) {
-                playerDot.scale.setScalar(0.6); // Shrink player icon on smaller map
+                playerDot.scale.setScalar(0.6); 
             } else {
                 playerDot.scale.setScalar(1.0);
             }
 
-            // Update Map Camera position
             mapCamera.position.x = playerPosForMap.x;
             mapCamera.position.z = playerPosForMap.z;
 
-            // Update mask position to stay centered on map
-            if (typeof mapMask !== 'undefined') {
-                mapMask.position.x = playerPosForMap.x;
-                mapMask.position.z = playerPosForMap.z;
-            }
-
-            // Render minimap over scene
-            const currentPadding = isMobile ? 10 : 20;
-            const vx = window.innerWidth - currentMapSize - currentPadding;
-            const vy = window.innerHeight - currentMapSize - currentPadding;
-
-            renderer.setClearColor(0x000000, 0); // Transparent for corners
-            renderer.setViewport(vx, vy, currentMapSize, currentMapSize);
-            renderer.setScissor(vx, vy, currentMapSize, currentMapSize);
-            renderer.setScissorTest(true);
-            renderer.clearDepth(); // Clear depth so minimap appears on top correctly
-
-            // Temporarily disable fog so the high-altitude map camera can see the ground
+            // Render to secondary canvas
             const oldFog = scene.fog;
-            scene.fog = null;
-
-            renderer.render(scene, mapCamera);
-
-            // Restore fog for the next main frame
+            scene.fog = null; // Disable fog for minimap view
+            minimapRenderer.render(scene, mapCamera);
             scene.fog = oldFog;
 
             // --- RELOAD ANIMATION ---
@@ -1725,7 +1698,7 @@
             // Power-up Cooldown
             if (doubleDamageTimer > 0) {
                 doubleDamageTimer -= delta;
-                doubleDamageStatus.innerText = `🚬 ADRENALINE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
                 if (doubleDamageTimer <= 0) {
                     doubleDamageTimer = 0;
                     damageMultiplier = 1;
