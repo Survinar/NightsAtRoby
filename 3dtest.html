@@ -288,7 +288,29 @@
         }
 
         @media (orientation: portrait) {
-            #orientationOverlay { display: flex; }
+            #orientationOverlay {
+                display: flex;
+            }
+        }
+
+        /* Mobile Scale Adjustments */
+        @media screen and (max-width: 900px) {
+            #ui h2 {
+                font-size: 16px;
+            }
+
+            #nukeStatus {
+                display: none; /* Already integrated into button */
+            }
+
+            #ammoUI h2 {
+                font-size: 18px;
+            }
+
+            #bossBarContainer {
+                width: 300px;
+                top: 20px;
+            }
         }
     </style>
 </head>
@@ -1055,14 +1077,18 @@
         });
 
         // --- SYSTEM HELPERS ---
+        const btnNuke = document.getElementById('btnNuke');
         function updateNukeUI() {
             if (nukeActive) return; // Nuke handling its own UI during expansion
             if (nukeReady) {
                 nukeStatusEl.innerText = '☢ NUKE [N] - READY';
                 nukeStatusEl.style.color = '#ffaa00';
+                if (isMobile) btnNuke.innerText = 'NUKE';
             } else {
-                nukeStatusEl.innerText = `☢ NUKE [N] - ${Math.ceil(nukeCooldown)}s`;
+                const timer = Math.ceil(nukeCooldown);
+                nukeStatusEl.innerText = `☢ NUKE [N] - ${timer}s`;
                 nukeStatusEl.style.color = '#666';
+                if (isMobile) btnNuke.innerText = `NUKE (${timer}s)`;
             }
         }
 
