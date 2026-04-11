@@ -311,6 +311,17 @@
                 width: 300px;
                 top: 20px;
             }
+
+            #minimap-border {
+                width: 110px;
+                height: 110px;
+                border-radius: 50%;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(4px);
+                border-width: 2px;
+                top: 10px;
+                right: 10px;
+            }
         }
     </style>
 </head>
@@ -1597,6 +1608,8 @@
             renderer.render(scene, camera);
 
             // 2. Render Minimap
+            const currentMapSize = isMobile ? 110 : mapSize;
+
             // Update Player dot
             const playerPosForMap = controls.getObject().position;
             playerDot.position.x = playerPosForMap.x;
@@ -1604,6 +1617,12 @@
             playerDot.position.y = 150;
             const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
             playerDot.rotation.y = euler.y;
+            
+            if (isMobile) {
+                playerDot.scale.setScalar(0.6); // Shrink player icon on smaller map
+            } else {
+                playerDot.scale.setScalar(1.0);
+            }
 
             // Update Map Camera position
             mapCamera.position.x = playerPosForMap.x;
@@ -1611,11 +1630,11 @@
 
             // Render minimap over scene
             const padding = 20;
-            const vx = window.innerWidth - mapSize - padding;
-            const vy = window.innerHeight - mapSize - padding;
+            const vx = window.innerWidth - currentMapSize - padding;
+            const vy = window.innerHeight - currentMapSize - padding;
 
-            renderer.setViewport(vx, vy, mapSize, mapSize);
-            renderer.setScissor(vx, vy, mapSize, mapSize);
+            renderer.setViewport(vx, vy, currentMapSize, currentMapSize);
+            renderer.setScissor(vx, vy, currentMapSize, currentMapSize);
             renderer.setScissorTest(true);
 
             // Temporarily disable fog so the high-altitude map camera can see the ground
