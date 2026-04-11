@@ -316,8 +316,8 @@
                 width: 110px;
                 height: 110px;
                 border-radius: 50%;
-                background: rgba(0, 0, 0, 0.4);
-                backdrop-filter: blur(4px);
+                background: none;
+                backdrop-filter: none;
                 border-width: 2px;
                 top: 10px;
                 right: 10px;
@@ -586,6 +586,26 @@
         const playerDot = new THREE.Mesh(playerDotGeo, playerDotMat);
         playerDot.layers.set(MINIMAP_LAYER); // dot above enemies only visible on minimap
         scene.add(playerDot);
+
+        // Minimap Mask (Circular Hole)
+        const maskShape = new THREE.Shape();
+        maskShape.moveTo(-500, -500);
+        maskShape.lineTo(500, -500);
+        maskShape.lineTo(500, 500);
+        maskShape.lineTo(-500, 500);
+        maskShape.lineTo(-500, -500);
+
+        const maskHole = new THREE.Path();
+        maskHole.absarc(0, 0, 78, 0, Math.PI * 2, true); // 80 is map radius, 78 covers edge
+        maskShape.holes.push(maskHole);
+
+        const maskGeo = new THREE.ShapeGeometry(maskShape);
+        const maskMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.9 });
+        const mapMask = new THREE.Mesh(maskGeo, maskMat);
+        mapMask.rotateX(-Math.PI / 2);
+        mapMask.position.y = 195; // Just below camera
+        mapMask.layers.set(MINIMAP_LAYER);
+        scene.add(mapMask);
 
         // main controls
         const controls = new PointerLockControls(camera, document.body);
@@ -1627,6 +1647,12 @@
             // Update Map Camera position
             mapCamera.position.x = playerPosForMap.x;
             mapCamera.position.z = playerPosForMap.z;
+            
+            // Update mask position to stay centered on map
+            if (typeof mapMask !== 'undefined') {
+                mapMask.position.x = playerPosForMap.x;
+                mapMask.position.z = playerPosForMap.z;
+            }
 
             // Render minimap over scene
             const padding = 20;
