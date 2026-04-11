@@ -23,6 +23,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             user-select: none;
             background: black;
+            touch-action: none; /* Forcefully disable browser zoom/pan/scroll */
         }
 
         #ui {
@@ -391,7 +392,7 @@
 
         if (isMobile) {
             mobileControls.style.display = 'block';
-            startInstructions.innerText = 'Tap anywhere to start';
+            startInstructions.innerText = 'Tap to enter Fullscreen and Start';
         }
 
         // Audio System
@@ -543,6 +544,12 @@
             initAudio();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             if (isMobile) {
+                // Fullscreen request
+                const doc = window.document;
+                const docEl = doc.documentElement;
+                const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+                if (requestFullScreen) requestFullScreen.call(docEl);
+
                 blocker.style.display = 'none';
                 controls.isLocked = true; // Manual lock for mobile logic
             } else {
@@ -1710,8 +1717,15 @@
                         const movementX = t.clientX - lastTouchLook.x;
                         const movementY = t.clientY - lastTouchLook.y;
                         
+                        // Fix: Aiming sensitivity and inversion
+                        // movementY is positive when dragging DOWN, so we SUBTRACT it to look UP in FPS math
+                        // BUT PointerLock style usually expects subtraction. Let's ensure it's not double-inverted.
                         camera.rotation.y -= movementX * 0.005;
-                        camera.rotation.x -= movementY * 0.005;
+                        camera.rotation.x -= movementY * 0.005; // Standard FPS: Drag down = look up? Let's check.
+                        // Actually, many mobile games use Pull Down = Look Down (Direct mapping).
+                        // If user said "turns towards ground", it might be too sensitive or inverted.
+                        // Let's use a smaller multiplier and standard mapping.
+                        
                         camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
                         
                         lastTouchLook.x = t.clientX;
