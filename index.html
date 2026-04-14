@@ -1598,8 +1598,6 @@
             new THREE.MeshPhongMaterial({ color: 0x5b5b69, flatShading: true }),
             new THREE.MeshPhongMaterial({ color: 0x3f3f4d, flatShading: true })
         ];
-        const mountainAccentMaterial = new THREE.MeshPhongMaterial({ color: 0x6d6d78, flatShading: true });
-        const mountainTopMaterial = new THREE.MeshPhongMaterial({ color: 0x7e7e88, flatShading: true });
         const mountainSkirtMaterials = [
             new THREE.MeshPhongMaterial({ color: 0x384027, flatShading: true, transparent: true, opacity: 0.95 }),
             new THREE.MeshPhongMaterial({ color: 0x4d4d58, flatShading: true, transparent: true, opacity: 0.88 }),
@@ -1682,7 +1680,6 @@
         function createMountain(x, z, levels) {
             const mountain = new THREE.Group();
             const collisionLayers = [];
-            const accentMeshes = [];
             const rubbleMeshes = [];
             for (let i = 0; i < levels; i++) {
                 const size = (levels - i) * 6;
@@ -1698,36 +1695,7 @@
                 mountain.add(layer);
                 collisionLayers.push(layer);
                 platformMeshes.push(layer);
-
-                const accentCount = i === levels - 1 ? 3 : 2;
-                for (let j = 0; j < accentCount; j++) {
-                    const accentGeo = new THREE.DodecahedronGeometry(Math.max(1.2, size * (0.12 + Math.random() * 0.05)), 0);
-                    const accent = new THREE.Mesh(accentGeo, j === accentCount - 1 && i === levels - 1 ? mountainTopMaterial : mountainAccentMaterial);
-                    const angle = (j / accentCount) * Math.PI * 2 + Math.random() * 0.5;
-                    const ringRadius = Math.max(0.8, size * 0.18);
-                    accent.position.set(
-                        Math.cos(angle) * ringRadius,
-                        i * h + h + 0.5 + Math.random() * 0.4,
-                        Math.sin(angle) * ringRadius
-                    );
-                    accent.scale.set(
-                        1 + Math.random() * 0.5,
-                        0.7 + Math.random() * 0.4,
-                        1 + Math.random() * 0.5
-                    );
-                    accent.rotation.set(Math.random(), Math.random(), Math.random());
-                    mountain.add(accent);
-                    accentMeshes.push(accent);
-                }
-
             }
-
-            const crownGeo = new THREE.CylinderGeometry(levels * 0.9, levels * 1.25, 1.1, 6);
-            const crown = new THREE.Mesh(crownGeo, mountainTopMaterial);
-            crown.position.set(0, levels * 2 + 0.55, 0);
-            crown.rotation.y = Math.random() * Math.PI;
-            mountain.add(crown);
-            accentMeshes.push(crown);
 
             const baseRadius = levels * 3.25;
             for (let i = 0; i < 3; i++) {
@@ -1770,10 +1738,6 @@
 
             for (const layer of collisionLayers) {
                 platformBoxes.push(new THREE.Box3().setFromObject(layer));
-            }
-
-            for (const accent of accentMeshes) {
-                addSteppedMeshCollisionBoxes(accent, platformBoxes, 4, 0.05);
             }
 
             for (const rubble of rubbleMeshes) {
