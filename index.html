@@ -40,18 +40,154 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
             pointer-events: none;
             z-index: 100;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: min(320px, calc(100vw - 40px));
+            color: white;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
 
-        #health {
-            color: #ff4444;
+        .hud-card {
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+                rgba(6, 8, 12, 0.74);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 14px 30px rgba(0, 0, 0, 0.28);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
-        #score {
-            color: #44ff44;
+        .hud-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.68);
+        }
+
+        .hud-value {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            font-weight: 900;
+            letter-spacing: 0.03em;
+        }
+
+        .hud-number {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .hud-unit {
+            font-size: 13px;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.62);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        #healthCard {
+            border-color: rgba(255, 88, 88, 0.28);
+            background:
+                linear-gradient(180deg, rgba(255, 90, 90, 0.14), rgba(255, 255, 255, 0.03)),
+                rgba(18, 6, 8, 0.82);
+        }
+
+        #healthValue {
+            color: #ff8b8b;
+        }
+
+        #healthBar {
+            margin-top: 10px;
+            height: 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.08);
+            overflow: hidden;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        }
+
+        #healthBarFill {
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background:
+                linear-gradient(90deg, #7f1017 0%, #ff3b30 45%, #ff9b71 100%);
+            box-shadow: 0 0 18px rgba(255, 59, 48, 0.45);
+            transition: width 0.18s ease-out, filter 0.18s ease-out;
+        }
+
+        #scoreCard {
+            border-color: rgba(91, 255, 145, 0.2);
+            background:
+                linear-gradient(180deg, rgba(80, 255, 152, 0.12), rgba(255, 255, 255, 0.03)),
+                rgba(7, 17, 10, 0.8);
+        }
+
+        #scoreValue {
+            color: #8dffae;
+        }
+
+        #nukeStatus {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-color: rgba(255, 191, 71, 0.26);
+            background:
+                linear-gradient(180deg, rgba(255, 178, 43, 0.15), rgba(255, 255, 255, 0.03)),
+                rgba(21, 14, 4, 0.84);
+        }
+
+        #nukeTextWrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        #nukeLabel {
+            margin: 0;
+        }
+
+        #nukeText {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #ffd277;
+        }
+
+        #nukeHotkey {
+            flex-shrink: 0;
+            padding: 7px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            color: rgba(255, 255, 255, 0.88);
+        }
+
+        #nukeStatus.ready #nukeText {
+            color: #ffd277;
+        }
+
+        #nukeStatus.cooldown #nukeText {
+            color: #8f949d;
+        }
+
+        #nukeStatus.active #nukeText {
+            color: #fff2b3;
+            text-shadow: 0 0 18px rgba(255, 196, 64, 0.6);
         }
 
         #crosshair {
@@ -401,8 +537,36 @@
             }
 
             #nukeStatus {
+                padding: 10px 12px;
+            }
+
+            #ui {
+                top: 10px;
+                left: 10px;
+                width: min(220px, calc(100vw - 130px));
+                gap: 8px;
+            }
+
+            .hud-card {
+                padding: 10px 12px;
+                border-radius: 12px;
+            }
+
+            .hud-label {
+                font-size: 10px;
+                margin-bottom: 4px;
+            }
+
+            .hud-number {
+                font-size: 22px;
+            }
+
+            #nukeText {
+                font-size: 14px;
+            }
+
+            #nukeHotkey {
                 display: none;
-                /* Already integrated into button */
             }
 
             #powerupUI {
@@ -465,9 +629,30 @@
 <body>
     <div id="nukeFlash"></div>
     <div id="ui">
-        <h2 id="health">Health: <span id="healthValue">100</span></h2>
-        <h2 id="score">Score: <span id="scoreValue">0</span></h2>
-        <h2 id="nukeStatus">☢ NUKE [N] - READY</h2>
+        <div id="healthCard" class="hud-card">
+            <span class="hud-label">Health</span>
+            <div class="hud-value">
+                <span id="healthValue" class="hud-number">100</span>
+                <span class="hud-unit">HP</span>
+            </div>
+            <div id="healthBar">
+                <div id="healthBarFill"></div>
+            </div>
+        </div>
+        <div id="scoreCard" class="hud-card">
+            <span class="hud-label">Score</span>
+            <div class="hud-value">
+                <span id="scoreValue" class="hud-number">0</span>
+                <span class="hud-unit">PTS</span>
+            </div>
+        </div>
+        <div id="nukeStatus" class="hud-card ready">
+            <div id="nukeTextWrap">
+                <span id="nukeLabel" class="hud-label">Nuke</span>
+                <span id="nukeText">Ready</span>
+            </div>
+            <span id="nukeHotkey">N</span>
+        </div>
     </div>
     <div id="ammoUI">
         <h2 id="ammo">AMMO: <span id="ammoValue">15</span> / 15</h2>
@@ -533,7 +718,7 @@
         let health = 100;
         let score = 0;
         let godMode = false;
-        let bossSpawned = false;
+        const spawnedBossThresholds = new Set();
         const bullets = [];
         const targets = [];
         const medkits = [];
@@ -566,6 +751,7 @@
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
+        const nukeTextEl = document.getElementById('nukeText');
         const bossBarContainer = document.getElementById('bossBarContainer');
         const bossBarFill = document.getElementById('bossBarFill');
         const powerupUI = document.getElementById('powerupUI');
@@ -592,6 +778,7 @@
         const resumeButton = document.getElementById('resumeButton');
         const restartButton = document.getElementById('restartButton');
         const healthValueEl = document.getElementById('healthValue');
+        const healthBarFillEl = document.getElementById('healthBarFill');
         const scoreValueEl = document.getElementById('scoreValue');
 
         if (isMobile) {
@@ -715,10 +902,64 @@
         const zombieFaceTexture3 = textureLoader.load('./zombie_face_3.png');
         const zombieFaceTexture4 = textureLoader.load('./zombie_face_4.png');
         const posterTexture = textureLoader.load('./poster.png');
-        const bossFaceTexture = textureLoader.load('./boss_face.png');
-        const bossTorsoTexture = textureLoader.load('./boss_torso.png');
-        const bossLegsTexture = textureLoader.load('./boss_legs.png');
-        const bossHandsTexture = textureLoader.load('./boss_hands.png');
+
+        function createOptionalTexturedMaterial(texturePath, fallbackColor) {
+            const material = new THREE.MeshPhongMaterial({ color: fallbackColor });
+            textureLoader.load(
+                texturePath,
+                texture => {
+                    material.map = texture;
+                    material.color.setHex(0xffffff);
+                    material.needsUpdate = true;
+                },
+                undefined,
+                () => {
+                    material.map = null;
+                    material.color.setHex(fallbackColor);
+                    material.needsUpdate = true;
+                }
+            );
+            return material;
+        }
+
+        const bossConfigs = [
+            {
+                name: 'CARMEN',
+                scoreThreshold: 500,
+                announcement: 'CARMEN FINAL BOSS SPAWNED!',
+                minimapColor: 0xff00ff,
+                textures: {
+                    head: './boss_face.png',
+                    torso: './boss_torso.png',
+                    legs: './boss_legs.png',
+                    hands: './boss_hands.png'
+                },
+                colors: {
+                    head: 0xffffff,
+                    torso: 0x7a1d1d,
+                    legs: 0x3d1010,
+                    hands: 0x8a2b2b
+                }
+            },
+            {
+                name: 'Moișa',
+                scoreThreshold: 1500,
+                announcement: 'MOIȘA FINAL BOSS SPAWNED!',
+                minimapColor: 0x66ccff,
+                textures: {
+                    head: './moisa_face.png',
+                    torso: './moisa_torso.png',
+                    legs: './moisa_legs.png',
+                    hands: './moisa_hands.png'
+                },
+                colors: {
+                    head: 0xffffff,
+                    torso: 0x1d3d6b,
+                    legs: 0x172845,
+                    hands: 0x4b739d
+                }
+            }
+        ];
 
         // scene setup
         const scene = new THREE.Scene();
@@ -793,25 +1034,61 @@
             return true;
         }
 
-        function resolvePlayerEnemyCollisions(playerPos, playerBottom) {
+        function resolvePlayerEnemyCollisions(playerPos, playerBottom, playerTop, verticalVelocity) {
             for (const enemy of targets) {
                 const dx = playerPos.x - enemy.position.x;
                 const dz = playerPos.z - enemy.position.z;
                 const dist = Math.hypot(dx, dz);
                 const enemyCollisionRadius = enemy.userData.isBoss ? 1.45 : 0.68;
-                const zombieHeadHeight = enemy.position.y + (enemy.userData.isBoss ? 6.6 : 2.2);
+                const enemyHeight = enemy.userData.isBoss ? 6.6 : 2.2;
+                const enemyTop = enemy.position.y + enemyHeight;
+                const enemyBodyTop = enemyTop - (enemy.userData.isBoss ? 1.4 : 0.45);
+                const enemyBodyBottom = enemy.position.y + 0.25;
 
-                if (playerBottom >= zombieHeadHeight || dist >= enemyCollisionRadius) {
+                // Ignore collisions when the player is clearly above the enemy's body while airborne.
+                if (verticalVelocity <= 0 && playerBottom >= enemyBodyTop) {
+                    continue;
+                }
+
+                const overlapsEnemyBody = playerBottom < enemyBodyTop && playerTop > enemyBodyBottom;
+
+                if (!overlapsEnemyBody || dist >= enemyCollisionRadius) {
                     continue;
                 }
 
                 const overlap = enemyCollisionRadius - dist;
                 const safeDist = dist > 0.0001 ? dist : 0.0001;
+                const pushStrength = Math.abs(verticalVelocity) > 1.5 ? 0.45 : 1.0;
 
                 // Use the escape direction away from the enemy and only correct the overlap,
                 // which keeps enemies from pinning the player like hard walls on each axis.
-                playerPos.x += (dx / safeDist) * overlap;
-                playerPos.z += (dz / safeDist) * overlap;
+                playerPos.x += (dx / safeDist) * overlap * pushStrength;
+                playerPos.z += (dz / safeDist) * overlap * pushStrength;
+            }
+        }
+
+        function resolvePlayerPlatformCollisions(playerPos, playerBottom, playerTop) {
+            for (const box of platformBoxes) {
+                const intersectsHorizontally =
+                    playerPos.x + PLAYER_RADIUS > box.min.x && playerPos.x - PLAYER_RADIUS < box.max.x &&
+                    playerPos.z + PLAYER_RADIUS > box.min.z && playerPos.z - PLAYER_RADIUS < box.max.z;
+
+                const intersectsVertically = playerBottom < box.max.y - 0.1 && playerTop > box.min.y;
+
+                if (!intersectsHorizontally || !intersectsVertically) {
+                    continue;
+                }
+
+                const overlapLeft = (playerPos.x + PLAYER_RADIUS) - box.min.x;
+                const overlapRight = box.max.x - (playerPos.x - PLAYER_RADIUS);
+                const overlapFront = (playerPos.z + PLAYER_RADIUS) - box.min.z;
+                const overlapBack = box.max.z - (playerPos.z - PLAYER_RADIUS);
+                const minOverlap = Math.min(overlapLeft, overlapRight, overlapFront, overlapBack);
+
+                if (minOverlap === overlapLeft) playerPos.x -= overlapLeft;
+                else if (minOverlap === overlapRight) playerPos.x += overlapRight;
+                else if (minOverlap === overlapFront) playerPos.z -= overlapFront;
+                else playerPos.z += overlapBack;
             }
         }
 
@@ -848,8 +1125,15 @@
             }
         }
 
+        function updateHealthUI() {
+            const clampedHealth = Math.max(0, Math.min(100, health));
+            healthValueEl.innerText = Math.floor(clampedHealth);
+            healthBarFillEl.style.width = `${clampedHealth}%`;
+            healthBarFillEl.style.filter = clampedHealth <= 25 ? 'saturate(1.2) brightness(1.1)' : 'none';
+        }
+
         function syncHUD() {
-            healthValueEl.innerText = Math.floor(health);
+            updateHealthUI();
             scoreValueEl.innerText = score;
             updateAmmoUI();
             updateNukeUI();
@@ -864,7 +1148,7 @@
         function resetGameState() {
             health = 100;
             score = 0;
-            bossSpawned = false;
+            spawnedBossThresholds.clear();
             isGameOver = false;
             isPaused = false;
             velocity.set(0, 0, 0);
@@ -1303,13 +1587,24 @@
         }
 
         // boss target
-        function createBossTarget() {
+        function showAnnouncement(message, duration = 4000) {
+            announcementEl.innerText = message;
+            announcementEl.style.display = 'block';
+
+            setTimeout(() => {
+                if (announcementEl.innerText === message) {
+                    announcementEl.style.display = 'none';
+                }
+            }, duration);
+        }
+
+        function createBossTarget(bossConfig) {
             const bossGroup = new THREE.Group();
 
-            const headMat = new THREE.MeshPhongMaterial({ map: bossFaceTexture });
-            const torsoMat = new THREE.MeshPhongMaterial({ map: bossTorsoTexture });
-            const legMat = new THREE.MeshPhongMaterial({ map: bossLegsTexture });
-            const handMat = new THREE.MeshPhongMaterial({ map: bossHandsTexture });
+            const headMat = createOptionalTexturedMaterial(bossConfig.textures.head, bossConfig.colors.head);
+            const torsoMat = createOptionalTexturedMaterial(bossConfig.textures.torso, bossConfig.colors.torso);
+            const legMat = createOptionalTexturedMaterial(bossConfig.textures.legs, bossConfig.colors.legs);
+            const handMat = createOptionalTexturedMaterial(bossConfig.textures.hands, bossConfig.colors.hands);
 
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), headMat);
             head.position.y = 1.8;
@@ -1344,7 +1639,7 @@
             // Minimap Purple Dot
             const dotGeo = new THREE.CircleGeometry(6, 8);
             dotGeo.rotateX(-Math.PI / 2);
-            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff00ff }));
+            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: bossConfig.minimapColor }));
             dot.position.y = 50; // Scaled so local Y 50 = world 150
             dot.layers.set(MINIMAP_LAYER);
             bossGroup.add(dot);
@@ -1353,10 +1648,13 @@
                 hp: BOSS_MAX_HP,
                 speed: 3.5,
                 isBoss: true,
+                bossName: bossConfig.name,
+                bossThreshold: bossConfig.scoreThreshold,
                 materials: [headMat, torsoMat, legMat, handMat],
                 spawnTime: performance.now() // For invincibility window
             };
 
+            document.getElementById('bossBarTitle').innerText = bossConfig.name;
             bossBarContainer.style.display = 'block';
             bossBarFill.style.width = '100%';
 
@@ -1433,7 +1731,7 @@
                 godMode = !godMode;
                 if (godMode) {
                     health = 100;
-                    healthValueEl.innerText = health;
+                    updateHealthUI();
                 }
             }
         });
@@ -1442,17 +1740,19 @@
         const btnNuke = document.getElementById('btnNuke');
         function updateNukeUI() {
             if (nukeActive) {
+                nukeStatusEl.className = 'hud-card active';
+                nukeTextEl.innerText = 'Active';
                 if (isMobile) btnNuke.innerText = 'ACTIVE';
                 return;
             }
             if (nukeReady) {
-                nukeStatusEl.innerText = '☢ NUKE [N] - READY';
-                nukeStatusEl.style.color = '#ffaa00';
+                nukeStatusEl.className = 'hud-card ready';
+                nukeTextEl.innerText = 'Ready';
                 if (isMobile) btnNuke.innerText = 'NUKE';
             } else {
                 const timer = Math.ceil(nukeCooldown);
-                nukeStatusEl.innerText = `☢ NUKE [N] - ${timer}s`;
-                nukeStatusEl.style.color = '#666';
+                nukeStatusEl.className = 'hud-card cooldown';
+                nukeTextEl.innerText = `Cooldown ${timer}s`;
                 if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`;
             }
         }
@@ -1475,22 +1775,18 @@
             score += t.userData.isBoss ? 500 : 10;
             scoreValueEl.innerText = score;
 
-            if (score >= 500 && !bossSpawned) {
-                bossSpawned = true;
-                createBossTarget();
-
-                // Centered Announcement
-                announcementEl.innerText = "CARMEN FINAL BOSS SPAWNED!";
-                announcementEl.style.display = 'block';
-
-                setTimeout(() => {
-                    announcementEl.style.display = 'none';
-                }, 4000);
+            for (const bossConfig of bossConfigs) {
+                if (score >= bossConfig.scoreThreshold && !spawnedBossThresholds.has(bossConfig.scoreThreshold)) {
+                    spawnedBossThresholds.add(bossConfig.scoreThreshold);
+                    createBossTarget(bossConfig);
+                    showAnnouncement(bossConfig.announcement);
+                }
             }
 
             if (t.userData.isBoss) {
-                alert('YOU DEFEATED THE BOSS!');
                 bossBarContainer.style.display = 'none';
+                showAnnouncement(`${t.userData.bossName || 'BOSS'} DEFEATED! +500`, 3000);
+                for (let i = 0; i < 5; i++) createHumanTarget();
             } else if (!nukeActive) {
                 // Only respawn normal targets individually if it wasn't a nuke (nuke resyncs at end)
                 createHumanTarget();
@@ -1642,32 +1938,9 @@
                 let playerBottom = camera.position.y - playerBodyHeight;
                 let playerTop = camera.position.y + PLAYER_HEAD_MARGIN;
 
-                const oldX = controls.getObject().position.x;
                 controls.moveRight(-velocity.x * simulationDelta);
-
-                // Platform Collision (X)
-                for (let p of platformBoxes) {
-                    if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
-                        controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
-                        playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
-                        controls.getObject().position.x = oldX;
-                        velocity.x = 0;
-                        break;
-                    }
-                }
-                const oldZ = controls.getObject().position.z;
                 controls.moveForward(-velocity.z * simulationDelta);
-
-                // Platform Collision (Z)
-                for (let p of platformBoxes) {
-                    if (controls.getObject().position.x + playerRadius > p.min.x && controls.getObject().position.x - playerRadius < p.max.x &&
-                        controls.getObject().position.z + playerRadius > p.min.z && controls.getObject().position.z - playerRadius < p.max.z &&
-                        playerBottom < p.max.y - 0.1 && playerTop > p.min.y) {
-                        controls.getObject().position.z = oldZ;
-                        velocity.z = 0;
-                        break;
-                    }
-                }
+                resolvePlayerPlatformCollisions(playerPos, playerBottom, playerTop);
                 // Jumping physics
                 if (isJumping && canJump) {
                     velocityY = JUMP_FORCE;
@@ -1701,7 +1974,8 @@
                 }
 
                 playerBottom = camera.position.y - playerBodyHeight;
-                resolvePlayerEnemyCollisions(playerPos, playerBottom);
+                playerTop = camera.position.y + PLAYER_HEAD_MARGIN;
+                resolvePlayerEnemyCollisions(playerPos, playerBottom, playerTop, velocityY);
 
                 const testVar = null;
 
@@ -1750,7 +2024,7 @@
                     const dist = Math.hypot(mk.position.x - playerPos.x, mk.position.z - playerPos.z);
                     if (dist < 1.5) {
                         health = Math.min(100, health + mk.userData.healAmount);
-                        healthValueEl.innerText = Math.floor(health);
+                        updateHealthUI();
                         playPickupSound();
                         scene.remove(mk);
                         medkits.splice(i, 1);
@@ -1916,17 +2190,24 @@
                         // Make target face player before calculating animation
                         t.lookAt(playerPos.x, t.position.y, playerPos.z);
 
-                        // --- WALKING ANIMATION (Bobbing & Arm Swinging) ---
-                        const walkSpeed = t.userData.isBoss ? 4 : 8; // Boss bobs slower/heavy
-                        const bobAmount = t.userData.isBoss ? 0.3 : 0.1;
-                        const walkCycle = Math.sin(time * 0.001 * walkSpeed);
+                        // --- WALKING ANIMATION (Softer torso sway + proper limb swing) ---
+                        const walkSpeed = t.userData.isBoss ? 3.4 : 7.2;
+                        const walkCycle = time * 0.001 * walkSpeed;
+                        const strideSwing = Math.sin(walkCycle);
+                        const secondarySwing = Math.sin(walkCycle * 2);
+                        const armSwing = t.userData.isBoss ? 0.32 : 0.72;
+                        const legSwing = t.userData.isBoss ? 0.24 : 0.58;
+                        const bobAmount = t.userData.isBoss ? 0.08 : 0.04;
+                        const bobOffset = Math.max(0, secondarySwing) * bobAmount;
 
-                        // Vertical bobbing (use absolute to stay above ground)
-                        const bobOffset = Math.abs(walkCycle) * bobAmount;
+                        // Arms and legs counter-swing for a clearer walk silhouette.
+                        if (t.children[2]) t.children[2].rotation.x = strideSwing * armSwing;
+                        if (t.children[3]) t.children[3].rotation.x = -strideSwing * armSwing;
+                        if (t.children[4]) t.children[4].rotation.x = -strideSwing * legSwing;
+                        if (t.children[5]) t.children[5].rotation.x = strideSwing * legSwing;
 
-                        // Arm swinging (Arms are meshes at children index 2 and 3)
-                        if (t.children[2]) t.children[2].rotation.x = walkCycle * 0.5;
-                        if (t.children[3]) t.children[3].rotation.x = -walkCycle * 0.5;
+                        // Keep the root facing stable and apply the extra motion to the torso instead.
+                        if (t.children[1]) t.children[1].rotation.z = strideSwing * (t.userData.isBoss ? 0.035 : 0.06);
 
                         // Zombie Vertical Height (Terrain Tracking + Bobbing)
                         let tGroundY = 0;
@@ -1942,6 +2223,13 @@
                         // Apply smoothing target height with the bob offset
                         const targetY = tGroundY + bobOffset;
                         t.position.y += (targetY - t.position.y) * 10 * simulationDelta;
+                    } else {
+                        // When close enough to attack, settle back to an idle pose instead of freezing mid-stride.
+                        if (t.children[2]) t.children[2].rotation.x += (0 - t.children[2].rotation.x) * 8 * simulationDelta;
+                        if (t.children[3]) t.children[3].rotation.x += (0 - t.children[3].rotation.x) * 8 * simulationDelta;
+                        if (t.children[4]) t.children[4].rotation.x += (0 - t.children[4].rotation.x) * 8 * simulationDelta;
+                        if (t.children[5]) t.children[5].rotation.x += (0 - t.children[5].rotation.x) * 8 * simulationDelta;
+                        if (t.children[1]) t.children[1].rotation.z += (0 - t.children[1].rotation.z) * 8 * simulationDelta;
                     }
 
                     // Check if target is close enough to damage player
@@ -1955,7 +2243,7 @@
                                 health -= damage;
                                 t.userData.lastHitTime = time;
                                 playHitSound(); // Optional: play hit sound when damaged
-                                healthValueEl.innerText = Math.max(0, Math.floor(health));
+                                updateHealthUI();
                             }
 
                             // Game Over State
@@ -1964,7 +2252,7 @@
                                 isPaused = false;
                                 resetMovementInputs();
                                 controls.unlock();
-                                healthValueEl.innerText = 0;
+                                updateHealthUI();
                             }
                         }
                     }
