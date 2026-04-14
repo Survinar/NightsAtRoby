@@ -1528,22 +1528,102 @@
         // mountain
         const platformMeshes = [];
         const platformBoxes = [];
+        const mountainRockMaterials = [
+            new THREE.MeshPhongMaterial({ color: 0x4a4a5a, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x5b5b69, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x3f3f4d, flatShading: true })
+        ];
+        const mountainAccentMaterial = new THREE.MeshPhongMaterial({ color: 0x6d6d78, flatShading: true });
+        const mountainTopMaterial = new THREE.MeshPhongMaterial({ color: 0x7e7e88, flatShading: true });
+        const mountainSkirtMaterials = [
+            new THREE.MeshPhongMaterial({ color: 0x384027, flatShading: true, transparent: true, opacity: 0.95 }),
+            new THREE.MeshPhongMaterial({ color: 0x4d4d58, flatShading: true, transparent: true, opacity: 0.88 }),
+            new THREE.MeshPhongMaterial({ color: 0x5d5a4f, flatShading: true, transparent: true, opacity: 0.82 })
+        ];
 
         function createMountain(x, z, levels) {
-            const mtrl = new THREE.MeshPhongMaterial({ color: 0x4a4a5a }); // gray rock
+            const mountain = new THREE.Group();
             for (let i = 0; i < levels; i++) {
                 const size = (levels - i) * 6;
                 const h = 2; // step height
-                const boxGeo = new THREE.BoxGeometry(size, h, size);
-                const box = new THREE.Mesh(boxGeo, mtrl);
-                box.position.set(x, i * h + (h / 2), z);
-                scene.add(box);
-                platformMeshes.push(box);
+                const layerGeo = new THREE.BoxGeometry(size, h, size);
+                const layer = new THREE.Mesh(layerGeo, mountainRockMaterials[i % mountainRockMaterials.length]);
+                layer.position.set(
+                    (Math.random() - 0.5) * 1.4,
+                    i * h + (h / 2),
+                    (Math.random() - 0.5) * 1.4
+                );
+                layer.rotation.y = (Math.random() - 0.5) * 0.08;
+                mountain.add(layer);
+                platformMeshes.push(layer);
 
-                box.updateMatrixWorld();
-                const box3 = new THREE.Box3().setFromObject(box);
+                const accentCount = i === levels - 1 ? 3 : 2;
+                for (let j = 0; j < accentCount; j++) {
+                    const accentGeo = new THREE.DodecahedronGeometry(Math.max(1.2, size * (0.12 + Math.random() * 0.05)), 0);
+                    const accent = new THREE.Mesh(accentGeo, j === accentCount - 1 && i === levels - 1 ? mountainTopMaterial : mountainAccentMaterial);
+                    const angle = (j / accentCount) * Math.PI * 2 + Math.random() * 0.5;
+                    const ringRadius = Math.max(0.8, size * 0.18);
+                    accent.position.set(
+                        Math.cos(angle) * ringRadius,
+                        i * h + h + 0.5 + Math.random() * 0.4,
+                        Math.sin(angle) * ringRadius
+                    );
+                    accent.scale.set(
+                        1 + Math.random() * 0.5,
+                        0.7 + Math.random() * 0.4,
+                        1 + Math.random() * 0.5
+                    );
+                    accent.rotation.set(Math.random(), Math.random(), Math.random());
+                    mountain.add(accent);
+                }
+
+                layer.updateMatrixWorld();
+                const box3 = new THREE.Box3().setFromObject(layer);
                 platformBoxes.push(box3);
             }
+
+            const crownGeo = new THREE.CylinderGeometry(levels * 0.9, levels * 1.25, 1.1, 6);
+            const crown = new THREE.Mesh(crownGeo, mountainTopMaterial);
+            crown.position.set(0, levels * 2 + 0.55, 0);
+            crown.rotation.y = Math.random() * Math.PI;
+            mountain.add(crown);
+
+            const baseRadius = levels * 4.8;
+            for (let i = 0; i < 5; i++) {
+                const skirtGeo = new THREE.CircleGeometry(baseRadius * (1 + i * 0.14), 10 + i * 2);
+                const skirt = new THREE.Mesh(skirtGeo, mountainSkirtMaterials[i % mountainSkirtMaterials.length]);
+                skirt.rotation.x = -Math.PI / 2;
+                skirt.position.y = 0.03 + i * 0.012;
+                skirt.rotation.z = Math.random() * Math.PI;
+                skirt.scale.set(
+                    1 + Math.random() * 0.18,
+                    1 + Math.random() * 0.12,
+                    1 + Math.random() * 0.18
+                );
+                mountain.add(skirt);
+            }
+
+            for (let i = 0; i < 7; i++) {
+                const rubbleGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 1.4, 0);
+                const rubble = new THREE.Mesh(rubbleGeo, mountainRockMaterials[(i + levels) % mountainRockMaterials.length]);
+                const angle = (i / 7) * Math.PI * 2 + Math.random() * 0.45;
+                const radius = baseRadius * (0.72 + Math.random() * 0.35);
+                rubble.position.set(
+                    Math.cos(angle) * radius,
+                    0.45 + Math.random() * 0.35,
+                    Math.sin(angle) * radius
+                );
+                rubble.scale.set(
+                    1.15 + Math.random() * 0.6,
+                    0.45 + Math.random() * 0.22,
+                    1.0 + Math.random() * 0.45
+                );
+                rubble.rotation.set(Math.random(), Math.random(), Math.random());
+                mountain.add(rubble);
+            }
+
+            mountain.position.set(x, 0, z);
+            scene.add(mountain);
         }
 
         // mountains around the scene
@@ -1572,29 +1652,67 @@
         createBorderWall(2, 20, 204, 101, 10, 0);  // East
 
         // trees and bushes
-        const treeGeoTrunk = new THREE.CylinderGeometry(0.5, 0.5, 3, 8);
-        const treeMatTrunk = new THREE.MeshPhongMaterial({ color: 0x4a2e15 });
-        const treeGeoLeaves = new THREE.ConeGeometry(2.5, 5, 8);
-        const treeMatLeaves = new THREE.MeshPhongMaterial({ color: 0x2d4c1e });
+        const treeGeoTrunk = new THREE.CylinderGeometry(0.45, 0.65, 3.6, 8);
+        const treeMatTrunk = new THREE.MeshPhongMaterial({ color: 0x4a2e15, flatShading: true });
+        const treeGeoLeavesTall = new THREE.ConeGeometry(2.8, 4.8, 8);
+        const treeGeoLeavesWide = new THREE.ConeGeometry(3.4, 3.4, 8);
+        const treeGeoCanopy = new THREE.DodecahedronGeometry(2.2, 0);
+        const treeLeafMaterials = [
+            new THREE.MeshPhongMaterial({ color: 0x2d4c1e, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x375826, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x456a2f, flatShading: true })
+        ];
 
         function createTree(x, z) {
             const tree = new THREE.Group();
             const trunk = new THREE.Mesh(treeGeoTrunk, treeMatTrunk);
-            trunk.position.y = 1.5;
+            trunk.position.y = 1.8;
+            trunk.rotation.z = (Math.random() - 0.5) * 0.08;
             tree.add(trunk);
 
-            const leaves = new THREE.Mesh(treeGeoLeaves, treeMatLeaves);
-            leaves.position.y = 4.5;
-            tree.add(leaves);
+            const leafMatA = treeLeafMaterials[Math.floor(Math.random() * treeLeafMaterials.length)];
+            const leafMatB = treeLeafMaterials[Math.floor(Math.random() * treeLeafMaterials.length)];
+            const leafMatC = treeLeafMaterials[Math.floor(Math.random() * treeLeafMaterials.length)];
+
+            if (Math.random() < 0.5) {
+                const lowerLeaves = new THREE.Mesh(treeGeoLeavesWide, leafMatA);
+                lowerLeaves.position.y = 4.4;
+                lowerLeaves.rotation.y = Math.random() * Math.PI;
+                tree.add(lowerLeaves);
+
+                const upperLeaves = new THREE.Mesh(treeGeoLeavesTall, leafMatB);
+                upperLeaves.position.y = 6.5;
+                upperLeaves.rotation.y = Math.random() * Math.PI;
+                tree.add(upperLeaves);
+            } else {
+                const canopyCore = new THREE.Mesh(treeGeoCanopy, leafMatA);
+                canopyCore.position.y = 5.2;
+                canopyCore.scale.set(1.2, 1.45, 1.2);
+                canopyCore.rotation.set(Math.random(), Math.random(), Math.random());
+                tree.add(canopyCore);
+
+                const canopySideA = new THREE.Mesh(treeGeoCanopy, leafMatB);
+                canopySideA.position.set(1.15, 4.95, 0.35);
+                canopySideA.scale.set(0.9, 1.05, 0.9);
+                canopySideA.rotation.set(Math.random(), Math.random(), Math.random());
+                tree.add(canopySideA);
+
+                const canopySideB = new THREE.Mesh(treeGeoCanopy, leafMatC);
+                canopySideB.position.set(-1.0, 4.85, -0.45);
+                canopySideB.scale.set(0.85, 1.0, 0.85);
+                canopySideB.rotation.set(Math.random(), Math.random(), Math.random());
+                tree.add(canopySideB);
+            }
 
             tree.position.set(x, 0, z);
 
             // scaling for variety
-            const scale = 0.7 + Math.random() * 0.8;
+            const scale = 0.8 + Math.random() * 0.9;
             tree.scale.set(scale, scale, scale);
+            tree.rotation.y = Math.random() * Math.PI;
 
             scene.add(tree);
-            treePositions.push({ x: x, z: z, radius: 0.8 * scale });
+            treePositions.push({ x: x, z: z, radius: 1.2 * scale });
         }
 
         // random trees avoiding spawn area
@@ -1618,8 +1736,13 @@
         }
 
         // small bushes
-        const bushGeo = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-        const bushMat = new THREE.MeshPhongMaterial({ color: 0x3a5c2e });
+        const bushGeoMain = new THREE.DodecahedronGeometry(1.1, 0);
+        const bushGeoAccent = new THREE.DodecahedronGeometry(0.75, 0);
+        const bushMaterials = [
+            new THREE.MeshPhongMaterial({ color: 0x36552a, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x446735, flatShading: true }),
+            new THREE.MeshPhongMaterial({ color: 0x52753e, flatShading: true })
+        ];
         for (let i = 0; i < 40; i++) {
             let x = (Math.random() - 0.5) * 180;
             let z = (Math.random() - 0.5) * 180;
@@ -1635,13 +1758,39 @@
             }
             if (insideMountain) continue;
 
-            const bush = new THREE.Mesh(bushGeo, bushMat);
-            bush.position.set(x, 0.75, z);
+            const bush = new THREE.Group();
+            const bushCore = new THREE.Mesh(bushGeoMain, bushMaterials[Math.floor(Math.random() * bushMaterials.length)]);
+            bushCore.scale.set(1.15, 0.9, 1.05);
+            bushCore.rotation.set(Math.random(), Math.random(), Math.random());
+            bush.add(bushCore);
+
+            const bushLobeA = new THREE.Mesh(bushGeoAccent, bushMaterials[Math.floor(Math.random() * bushMaterials.length)]);
+            bushLobeA.position.set(0.8, 0.12, 0.15);
+            bushLobeA.scale.set(0.95, 0.9, 0.95);
+            bushLobeA.rotation.set(Math.random(), Math.random(), Math.random());
+            bush.add(bushLobeA);
+
+            const bushLobeB = new THREE.Mesh(bushGeoAccent, bushMaterials[Math.floor(Math.random() * bushMaterials.length)]);
+            bushLobeB.position.set(-0.7, -0.05, -0.2);
+            bushLobeB.scale.set(0.9, 0.85, 0.9);
+            bushLobeB.rotation.set(Math.random(), Math.random(), Math.random());
+            bush.add(bushLobeB);
+
+            if (Math.random() < 0.45) {
+                const bushLobeC = new THREE.Mesh(bushGeoAccent, bushMaterials[Math.floor(Math.random() * bushMaterials.length)]);
+                bushLobeC.position.set(0.1, 0.35, -0.55);
+                bushLobeC.scale.set(0.75, 0.7, 0.75);
+                bushLobeC.rotation.set(Math.random(), Math.random(), Math.random());
+                bush.add(bushLobeC);
+            }
+
+            bush.position.set(x, 0.9, z);
             bush.rotation.y = Math.random() * Math.PI;
-            bush.rotation.x = Math.random() * 0.2;
-            bush.scale.setScalar(0.5 + Math.random() * 1.5);
+            bush.rotation.x = (Math.random() - 0.5) * 0.12;
+            const bushScale = 0.55 + Math.random() * 1.15;
+            bush.scale.setScalar(bushScale);
             scene.add(bush);
-            bushPositions.push({ x: x, z: z, radius: 1.5 * bush.scale.x });
+            bushPositions.push({ x: x, z: z, radius: 1.7 * bushScale });
         }
 
         // Poster Wall Setup (North edge of the map)
