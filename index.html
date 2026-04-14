@@ -86,6 +86,66 @@
             z-index: 200;
         }
 
+        #menuPanel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 32px 28px;
+            min-width: min(90vw, 420px);
+            background: rgba(0, 0, 0, 0.78);
+            border: 2px solid rgba(255, 255, 255, 0.14);
+            border-radius: 16px;
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+        }
+
+        #menuTitle {
+            text-align: center;
+        }
+
+        #menuMessage {
+            text-align: center;
+            line-height: 1.5;
+            max-width: 28ch;
+        }
+
+        #menuButtons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .menu-btn {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font: inherit;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.15s ease;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, 0.18);
+            transform: translateY(-1px);
+        }
+
+        .menu-btn:active {
+            transform: translateY(0);
+        }
+
+        #menuHint {
+            font-size: 15px;
+            color: #aaa;
+        }
+
         h1 {
             margin: 0 0 10px 0;
             font-size: 48px;
@@ -120,12 +180,15 @@
             width: 200px;
             height: 200px;
             border: 3px solid rgba(255, 255, 255, 0.7);
-            border-radius: 50%; /* Made circular by default */
+            border-radius: 50%;
+            /* Made circular by default */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
             pointer-events: none;
             z-index: 100;
-            overflow: hidden; /* Key for circular clipping */
-            background: rgba(0, 0, 0, 0.3); /* Subtle backdrop */
+            overflow: hidden;
+            /* Key for circular clipping */
+            background: rgba(0, 0, 0, 0.3);
+            /* Subtle backdrop */
         }
 
         #minimapCanvas {
@@ -270,12 +333,14 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            white-space: pre-line; /* Support \n newlines */
+            white-space: pre-line;
+            /* Support \n newlines */
             line-height: 1.2;
             padding: 5px;
             box-sizing: border-box;
             font-weight: bold;
-            font-size: 11px; /* Reduced for better fit in circles */
+            font-size: 11px;
+            /* Reduced for better fit in circles */
             pointer-events: auto;
             text-transform: uppercase;
         }
@@ -357,10 +422,27 @@
                 display: none;
             }
 
-            #btnShoot { bottom: 40px; right: 50px; width: 100px; height: 100px; }
-            #btnJump { bottom: 155px; right: 60px; }
-            #btnReload { bottom: 155px; right: 160px; }
-            #btnNuke { bottom: 40px; right: 170px; }
+            #btnShoot {
+                bottom: 40px;
+                right: 50px;
+                width: 100px;
+                height: 100px;
+            }
+
+            #btnJump {
+                bottom: 155px;
+                right: 60px;
+            }
+
+            #btnReload {
+                bottom: 155px;
+                right: 160px;
+            }
+
+            #btnNuke {
+                bottom: 40px;
+                right: 170px;
+            }
 
             #bossBarContainer {
                 width: 300px;
@@ -404,8 +486,16 @@
     <div id="crosshair">+</div>
 
     <div id="blocker">
-        <h1>5 NIGHTS AT ROBY BAR</h1>
-        <p id="startInstructions">Click anywhere to start</p>
+        <div id="menuPanel">
+            <h1 id="menuTitle">5 NIGHTS AT ROBY BAR</h1>
+            <p id="menuMessage">Click Start to begin</p>
+            <div id="menuButtons">
+                <button id="startButton" class="menu-btn">Start Game</button>
+                <button id="resumeButton" class="menu-btn" style="display: none;">Resume</button>
+                <button id="restartButton" class="menu-btn" style="display: none;">Restart Run</button>
+            </div>
+            <p id="menuHint">Press Esc during the game to pause</p>
+        </div>
     </div>
 
     <div id="mobileControls">
@@ -450,13 +540,17 @@
         const treePositions = [];
         const bushPositions = [];
         let lastTime = performance.now();
-        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false, isCrouching = false, isJumping = false;
+        let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, isSprinting = false, isCrouching = false, crouchRequested = false, isJumping = false;
         const velocity = new THREE.Vector3();
         const direction = new THREE.Vector3();
         let velocityY = 0;
         let canJump = true;
         const GRAVITY = 30;
         const JUMP_FORCE = 12;
+        const STANDING_EYE_HEIGHT = 1.6;
+        const CROUCHING_EYE_HEIGHT = 0.8;
+        const PLAYER_HEAD_MARGIN = 0.2;
+        const PLAYER_RADIUS = 0.4;
         let nukeReady = true;
         let nukeCooldown = 0;
         let nukeActive = false;
@@ -466,6 +560,9 @@
         const cigarettes = [];
         let doubleDamageTimer = 0;
         let damageMultiplier = 1;
+        let gameStarted = false;
+        let isPaused = false;
+        let isGameOver = false;
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
@@ -487,11 +584,20 @@
         let joystickVector = { x: 0, y: 0 };
         const mobileControls = document.getElementById('mobileControls');
         const joystickStick = document.getElementById('joystickStick');
-        const startInstructions = document.getElementById('startInstructions');
+        const blocker = document.getElementById('blocker');
+        const menuTitle = document.getElementById('menuTitle');
+        const menuMessage = document.getElementById('menuMessage');
+        const menuHint = document.getElementById('menuHint');
+        const startButton = document.getElementById('startButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const restartButton = document.getElementById('restartButton');
+        const healthValueEl = document.getElementById('healthValue');
+        const scoreValueEl = document.getElementById('scoreValue');
 
         if (isMobile) {
             mobileControls.style.display = 'block';
-            startInstructions.innerText = 'Tap to enter Fullscreen and Start';
+            menuMessage.innerText = 'Tap Start to enter fullscreen and begin';
+            menuHint.innerText = 'Use the on-screen controls to survive';
 
             // Safari Standalone check
             const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -630,10 +736,10 @@
 
         // dedicated minimap renderer
         const minimapCanvas = document.getElementById('minimapCanvas');
-        const minimapRenderer = new THREE.WebGLRenderer({ 
-            canvas: minimapCanvas, 
+        const minimapRenderer = new THREE.WebGLRenderer({
+            canvas: minimapCanvas,
             antialias: true,
-            alpha: true 
+            alpha: true
         });
         const mmSize = isMobile ? 110 : 200;
         minimapRenderer.setSize(mmSize, mmSize);
@@ -647,17 +753,157 @@
         mapCamera.layers.enable(MINIMAP_LAYER); // layering
 
         const playerDotGeo = new THREE.ConeGeometry(5, 12, 3);
-        playerDotGeo.rotateX(Math.PI / 2); // neg z
+        playerDotGeo.rotateX(-Math.PI / 2); // point the marker tip toward forward (-Z)
         const playerDotMat = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
         const playerDot = new THREE.Mesh(playerDotGeo, playerDotMat);
-        playerDot.layers.set(MINIMAP_LAYER); 
+        playerDot.layers.set(MINIMAP_LAYER);
         scene.add(playerDot);
 
         // main controls
         const controls = new PointerLockControls(camera, document.body);
-        const blocker = document.getElementById('blocker');
 
-        blocker.addEventListener('click', () => {
+        function resetMovementInputs() {
+            moveForward = false;
+            moveBackward = false;
+            moveLeft = false;
+            moveRight = false;
+            isSprinting = false;
+            isCrouching = false;
+            crouchRequested = false;
+            isJumping = false;
+            joystickVector = { x: 0, y: 0 };
+            touchLookId = null;
+            touchMoveId = null;
+            joystickStick.style.transform = 'translate(-50%, -50%)';
+        }
+
+        function playerIntersectsBoxAtHeight(posX, posZ, feetY, eyeHeight, box) {
+            const playerTop = feetY + eyeHeight + PLAYER_HEAD_MARGIN;
+            return posX + PLAYER_RADIUS > box.min.x && posX - PLAYER_RADIUS < box.max.x &&
+                posZ + PLAYER_RADIUS > box.min.z && posZ - PLAYER_RADIUS < box.max.z &&
+                feetY < box.max.y - 0.1 && playerTop > box.min.y;
+        }
+
+        function canUseHeightAtPosition(posX, posZ, feetY, eyeHeight) {
+            for (const box of platformBoxes) {
+                if (playerIntersectsBoxAtHeight(posX, posZ, feetY, eyeHeight, box)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function resolvePlayerEnemyCollisions(playerPos, playerBottom) {
+            for (const enemy of targets) {
+                const dx = playerPos.x - enemy.position.x;
+                const dz = playerPos.z - enemy.position.z;
+                const dist = Math.hypot(dx, dz);
+                const enemyCollisionRadius = enemy.userData.isBoss ? 1.45 : 0.68;
+                const zombieHeadHeight = enemy.position.y + (enemy.userData.isBoss ? 6.6 : 2.2);
+
+                if (playerBottom >= zombieHeadHeight || dist >= enemyCollisionRadius) {
+                    continue;
+                }
+
+                const overlap = enemyCollisionRadius - dist;
+                const safeDist = dist > 0.0001 ? dist : 0.0001;
+
+                // Use the escape direction away from the enemy and only correct the overlap,
+                // which keeps enemies from pinning the player like hard walls on each axis.
+                playerPos.x += (dx / safeDist) * overlap;
+                playerPos.z += (dz / safeDist) * overlap;
+            }
+        }
+
+        function setMenuState(mode) {
+            blocker.style.display = 'flex';
+
+            if (mode === 'start') {
+                menuTitle.innerText = '5 NIGHTS AT ROBY BAR';
+                menuMessage.innerText = isMobile ? 'Tap Start to enter fullscreen and begin' : 'Click Start to lock in and begin';
+                menuHint.innerText = isMobile ? 'Use the on-screen controls to survive' : '';
+                startButton.style.display = 'block';
+                resumeButton.style.display = 'none';
+                restartButton.style.display = 'none';
+                return;
+            }
+
+            if (mode === 'pause') {
+                menuTitle.innerText = 'Paused';
+                menuMessage.innerText = 'Take a breath. Your run is frozen until you resume.';
+                menuHint.innerText = isMobile ? 'Tap Resume when you are ready' : 'Click Resume to jump back in';
+                startButton.style.display = 'none';
+                resumeButton.style.display = 'block';
+                restartButton.style.display = 'block';
+                return;
+            }
+
+            if (mode === 'gameover') {
+                menuTitle.innerText = 'Game Over';
+                menuMessage.innerText = `You survived until scoring ${score}.`;
+                menuHint.innerText = 'Start a fresh run when you are ready';
+                startButton.style.display = 'none';
+                resumeButton.style.display = 'none';
+                restartButton.style.display = 'block';
+            }
+        }
+
+        function syncHUD() {
+            healthValueEl.innerText = Math.floor(health);
+            scoreValueEl.innerText = score;
+            updateAmmoUI();
+            updateNukeUI();
+            if (doubleDamageTimer > 0) {
+                powerupUI.style.display = 'flex';
+                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+            } else {
+                powerupUI.style.display = 'none';
+            }
+        }
+
+        function resetGameState() {
+            health = 100;
+            score = 0;
+            bossSpawned = false;
+            isGameOver = false;
+            isPaused = false;
+            velocity.set(0, 0, 0);
+            velocityY = 0;
+            canJump = true;
+            ammo = maxAmmo;
+            isReloading = false;
+            reloadProgress = 0;
+            damageMultiplier = 1;
+            doubleDamageTimer = 0;
+            nukeReady = true;
+            nukeCooldown = 0;
+            nukeActive = false;
+            nukeTimer = 0;
+            recoilAmount = 0;
+            recoilRotation = 0;
+            announcementEl.style.display = 'none';
+            bossBarContainer.style.display = 'none';
+
+            if (nukeSphere) {
+                scene.remove(nukeSphere);
+                nukeSphere = null;
+            }
+
+            bullets.forEach(bullet => scene.remove(bullet));
+            bullets.length = 0;
+
+            targets.forEach(target => scene.remove(target));
+            targets.length = 0;
+            for (let i = 0; i < 15; i++) createHumanTarget();
+
+            controls.getObject().position.set(0, STANDING_EYE_HEIGHT, 0);
+            camera.rotation.set(0, 0, 0);
+            resetMovementInputs();
+            syncHUD();
+            lastTime = performance.now();
+        }
+
+        function startOrResumeGame() {
             initAudio();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             if (isMobile) {
@@ -668,16 +914,55 @@
                 if (requestFullScreen) requestFullScreen.call(docEl);
 
                 blocker.style.display = 'none';
+                isPaused = false;
+                gameStarted = true;
                 controls.isLocked = true; // Manual lock for mobile logic
             } else {
                 controls.lock();
             }
+            lastTime = performance.now();
+        }
+
+        startButton.addEventListener('click', () => {
+            resetGameState();
+            startOrResumeGame();
         });
+
+        resumeButton.addEventListener('click', () => {
+            isPaused = false;
+            startOrResumeGame();
+        });
+
+        restartButton.addEventListener('click', () => {
+            resetGameState();
+            if (isMobile || gameStarted) {
+                startOrResumeGame();
+            } else {
+                setMenuState('start');
+            }
+        });
+
         controls.addEventListener('lock', () => {
-            if (!isMobile) blocker.style.display = 'none';
+            if (!isMobile) {
+                blocker.style.display = 'none';
+                isPaused = false;
+                gameStarted = true;
+                lastTime = performance.now();
+            }
         });
         controls.addEventListener('unlock', () => {
-            if (!isMobile) blocker.style.display = 'flex';
+            if (!isMobile) {
+                resetMovementInputs();
+                lastTime = performance.now();
+                if (isGameOver) {
+                    setMenuState('gameover');
+                } else if (gameStarted) {
+                    isPaused = true;
+                    setMenuState('pause');
+                } else {
+                    setMenuState('start');
+                }
+            }
         });
         scene.add(controls.getObject());
 
@@ -1093,7 +1378,7 @@
                 case 'ShiftLeft':
                 case 'ShiftRight': isSprinting = true; break;
                 case 'KeyC':
-                case 'ControlLeft': isCrouching = true; break;
+                case 'ControlLeft': crouchRequested = true; break;
             }
         };
         const onKeyUp = (event) => {
@@ -1106,7 +1391,7 @@
                 case 'ShiftLeft':
                 case 'ShiftRight': isSprinting = false; break;
                 case 'KeyC':
-                case 'ControlLeft': isCrouching = false; break;
+                case 'ControlLeft': crouchRequested = false; break;
             }
         };
         document.addEventListener('keydown', onKeyDown);
@@ -1148,7 +1433,7 @@
                 godMode = !godMode;
                 if (godMode) {
                     health = 100;
-                    document.getElementById('healthValue').innerText = health;
+                    healthValueEl.innerText = health;
                 }
             }
         });
@@ -1168,7 +1453,7 @@
                 const timer = Math.ceil(nukeCooldown);
                 nukeStatusEl.innerText = `☢ NUKE [N] - ${timer}s`;
                 nukeStatusEl.style.color = '#666';
-                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`; 
+                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`;
             }
         }
 
@@ -1188,7 +1473,7 @@
             scene.remove(t);
             targets.splice(j, 1);
             score += t.userData.isBoss ? 500 : 10;
-            document.getElementById('scoreValue').innerText = score;
+            scoreValueEl.innerText = score;
 
             if (score >= 500 && !bossSpawned) {
                 bossSpawned = true;
@@ -1326,27 +1611,39 @@
             requestAnimationFrame(animate);
             const time = performance.now();
             const delta = Math.min((time - lastTime) / 1000, 0.1);
+            const gameplayActive = controls.isLocked && !isPaused && !isGameOver;
+            const simulationDelta = gameplayActive ? delta : 0;
 
-            if (controls.isLocked) {
+            if (gameplayActive) {
                 // 1. Player Movement Physics (with Sprint)
-                velocity.x -= velocity.x * 10.0 * delta;
-                velocity.z -= velocity.z * 10.0 * delta;
+                velocity.x -= velocity.x * 10.0 * simulationDelta;
+                velocity.z -= velocity.z * 10.0 * simulationDelta;
 
                 direction.z = Number(moveForward) - Number(moveBackward);
                 direction.x = Number(moveRight) - Number(moveLeft);
                 direction.normalize();
 
-                const speedMultiplier = isCrouching ? 0.5 : (isSprinting ? 2.2 : 1.0);
-                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * speedMultiplier * delta;
-                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * speedMultiplier * delta;
+                const playerPos = controls.getObject().position;
+                const feetY = camera.position.y - (isCrouching ? CROUCHING_EYE_HEIGHT : STANDING_EYE_HEIGHT);
+                if (crouchRequested) {
+                    isCrouching = true;
+                } else if (isCrouching && canUseHeightAtPosition(playerPos.x, playerPos.z, feetY, STANDING_EYE_HEIGHT)) {
+                    isCrouching = false;
+                }
 
-                const playerRadius = 0.4;
-                const playerBodyHeight = isCrouching ? 0.8 : 1.6;
+                const playerBodyHeight = isCrouching ? CROUCHING_EYE_HEIGHT : STANDING_EYE_HEIGHT;
+                camera.position.y = feetY + playerBodyHeight;
+
+                const speedMultiplier = isCrouching ? 0.5 : (isSprinting ? 2.2 : 1.0);
+                if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * speedMultiplier * simulationDelta;
+                if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * speedMultiplier * simulationDelta;
+
+                const playerRadius = PLAYER_RADIUS;
                 let playerBottom = camera.position.y - playerBodyHeight;
-                let playerTop = camera.position.y + 0.2;
+                let playerTop = camera.position.y + PLAYER_HEAD_MARGIN;
 
                 const oldX = controls.getObject().position.x;
-                controls.moveRight(-velocity.x * delta);
+                controls.moveRight(-velocity.x * simulationDelta);
 
                 // Platform Collision (X)
                 for (let p of platformBoxes) {
@@ -1358,22 +1655,8 @@
                         break;
                     }
                 }
-                // Zombie Collision (X)
-                for (let t of targets) {
-                    const dx = controls.getObject().position.x - t.position.x;
-                    const dz = controls.getObject().position.z - t.position.z;
-                    const dist = Math.hypot(dx, dz);
-                    const minDist = t.userData.isBoss ? 1.8 : 0.8;
-                    const zombieHeadHeight = t.position.y + 2.0;
-                    if (dist < minDist && playerBottom < zombieHeadHeight) {
-                        controls.getObject().position.x = oldX;
-                        velocity.x = 0;
-                        break;
-                    }
-                }
-
                 const oldZ = controls.getObject().position.z;
-                controls.moveForward(-velocity.z * delta);
+                controls.moveForward(-velocity.z * simulationDelta);
 
                 // Platform Collision (Z)
                 for (let p of platformBoxes) {
@@ -1385,30 +1668,14 @@
                         break;
                     }
                 }
-                // Zombie Collision (Z)
-                for (let t of targets) {
-                    const dx = controls.getObject().position.x - t.position.x;
-                    const dz = controls.getObject().position.z - t.position.z;
-                    const dist = Math.hypot(dx, dz);
-                    const minDist = t.userData.isBoss ? 1.8 : 0.8;
-                    const zombieHeadHeight = t.position.y + 2.0;
-                    if (dist < minDist && playerBottom < zombieHeadHeight) {
-                        controls.getObject().position.z = oldZ;
-                        velocity.z = 0;
-                        break;
-                    }
-                }
-
-                const playerPos = controls.getObject().position;
-
                 // Jumping physics
                 if (isJumping && canJump) {
                     velocityY = JUMP_FORCE;
                     canJump = false;
                 }
 
-                velocityY -= GRAVITY * delta; // Apply gravity
-                camera.position.y += velocityY * delta;
+                velocityY -= GRAVITY * simulationDelta; // Apply gravity
+                camera.position.y += velocityY * simulationDelta;
 
                 // Ground level depends on crouching AND platforms
                 playerBottom = camera.position.y - playerBodyHeight;
@@ -1432,6 +1699,9 @@
                     // Walked off an edge
                     canJump = false;
                 }
+
+                playerBottom = camera.position.y - playerBodyHeight;
+                resolvePlayerEnemyCollisions(playerPos, playerBottom);
 
                 const testVar = null;
 
@@ -1475,12 +1745,12 @@
                     const mk = medkits[i];
                     // Float and rotate animation
                     mk.position.y = 0.5 + Math.sin(time * 0.003 + i) * 0.15;
-                    mk.rotation.y += 1.5 * delta;
+                    mk.rotation.y += 1.5 * simulationDelta;
 
                     const dist = Math.hypot(mk.position.x - playerPos.x, mk.position.z - playerPos.z);
                     if (dist < 1.5) {
                         health = Math.min(100, health + mk.userData.healAmount);
-                        document.getElementById('healthValue').innerText = Math.floor(health);
+                        healthValueEl.innerText = Math.floor(health);
                         playPickupSound();
                         scene.remove(mk);
                         medkits.splice(i, 1);
@@ -1492,7 +1762,7 @@
                 // Cigarette Pickup Check
                 for (let i = cigarettes.length - 1; i >= 0; i--) {
                     const cig = cigarettes[i];
-                    cig.rotation.y += 2 * delta;
+                    cig.rotation.y += 2 * simulationDelta;
                     cig.position.y = 0.2 + Math.sin(time * 0.005 + i) * 0.1;
 
                     const dist = Math.hypot(cig.position.x - playerPos.x, cig.position.z - playerPos.z);
@@ -1512,7 +1782,7 @@
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
                     bulletPreviousPosition.copy(b.userData.previousPosition || b.position);
-                    b.position.addScaledVector(b.userData.velocity, delta);
+                    b.position.addScaledVector(b.userData.velocity, simulationDelta);
                     b.userData.previousPosition.copy(b.position);
                     b.userData.life--;
 
@@ -1587,7 +1857,7 @@
                         const scaledSpeed = t.userData.speed + difficultyBoost;
 
                         // Move target with scaled speed
-                        t.position.addScaledVector(directionToPlayer, scaledSpeed * delta);
+                        t.position.addScaledVector(directionToPlayer, scaledSpeed * simulationDelta);
 
                         // Zombie-Zombie Collision Check (Soft push)
                         for (let other of targets) {
@@ -1671,7 +1941,7 @@
 
                         // Apply smoothing target height with the bob offset
                         const targetY = tGroundY + bobOffset;
-                        t.position.y += (targetY - t.position.y) * 10 * delta;
+                        t.position.y += (targetY - t.position.y) * 10 * simulationDelta;
                     }
 
                     // Check if target is close enough to damage player
@@ -1685,29 +1955,16 @@
                                 health -= damage;
                                 t.userData.lastHitTime = time;
                                 playHitSound(); // Optional: play hit sound when damaged
-                                document.getElementById('healthValue').innerText = Math.max(0, Math.floor(health));
+                                healthValueEl.innerText = Math.max(0, Math.floor(health));
                             }
 
                             // Game Over State
                             if (health <= 0) {
+                                isGameOver = true;
+                                isPaused = false;
+                                resetMovementInputs();
                                 controls.unlock();
-                                setTimeout(() => {
-                                    alert(`You survived until scoring: ${score}`);
-                                    health = 100;
-                                    score = 0;
-                                    document.getElementById('healthValue').innerText = health;
-                                    document.getElementById('scoreValue').innerText = score;
-
-                                    // Reset player position
-                                    controls.getObject().position.set(0, 1.6, 0);
-
-                                    // Push enemies back
-                                    targets.forEach(enemy => {
-                                        const angle = Math.random() * Math.PI * 2;
-                                        const radius = 30 + Math.random() * 20;
-                                        enemy.position.set(Math.cos(angle) * radius, 0, Math.sin(angle) * radius);
-                                    });
-                                }, 10);
+                                healthValueEl.innerText = 0;
                             }
                         }
                     }
@@ -1728,9 +1985,9 @@
             playerDot.position.y = 150;
             const euler = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ');
             playerDot.rotation.y = euler.y;
-            
+
             if (isMobile) {
-                playerDot.scale.setScalar(0.6); 
+                playerDot.scale.setScalar(0.6);
             } else {
                 playerDot.scale.setScalar(1.0);
             }
@@ -1747,8 +2004,8 @@
             // --- RELOAD ANIMATION ---
             let reloadYOffset = 0;
             let reloadRotX = 0;
-            if (isReloading) {
-                reloadProgress += delta / 1.5; // 1.5s reload
+            if (isReloading && simulationDelta > 0) {
+                reloadProgress += simulationDelta / 1.5; // 1.5s reload
                 if (reloadProgress >= 1.0) {
                     isReloading = false;
                     ammo = maxAmmo;
@@ -1763,12 +2020,12 @@
             }
 
             // --- RECOIL ANIMATION ---
-            recoilAmount = THREE.MathUtils.lerp(recoilAmount, 0, 10 * delta);
-            recoilRotation = THREE.MathUtils.lerp(recoilRotation, 0, 10 * delta);
+            recoilAmount = THREE.MathUtils.lerp(recoilAmount, 0, 10 * simulationDelta);
+            recoilRotation = THREE.MathUtils.lerp(recoilRotation, 0, 10 * simulationDelta);
 
             // Power-up Cooldown
-            if (doubleDamageTimer > 0) {
-                doubleDamageTimer -= delta;
+            if (doubleDamageTimer > 0 && simulationDelta > 0) {
+                doubleDamageTimer -= simulationDelta;
                 doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
                 if (doubleDamageTimer <= 0) {
                     doubleDamageTimer = 0;
@@ -1784,8 +2041,8 @@
             }
 
             // Nuke cooldown timer
-            if (!nukeReady && !nukeActive) {
-                nukeCooldown -= delta;
+            if (!nukeReady && !nukeActive && simulationDelta > 0) {
+                nukeCooldown -= simulationDelta;
                 if (nukeCooldown <= 0) {
                     nukeReady = true;
                 }
@@ -1793,8 +2050,8 @@
             }
 
             // Nuke expansion animation
-            if (nukeActive && nukeSphere) {
-                nukeTimer += delta;
+            if (nukeActive && nukeSphere && simulationDelta > 0) {
+                nukeTimer += simulationDelta;
                 const maxRadius = 120;
                 const expandSpeed = 60;
                 const currentRadius = nukeTimer * expandSpeed;
