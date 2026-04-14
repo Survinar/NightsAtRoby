@@ -1645,6 +1645,7 @@
         function createMountain(x, z, levels) {
             const mountain = new THREE.Group();
             const collisionLayers = [];
+            const accentMeshes = [];
             const rubbleMeshes = [];
             for (let i = 0; i < levels; i++) {
                 const size = (levels - i) * 6;
@@ -1679,6 +1680,7 @@
                     );
                     accent.rotation.set(Math.random(), Math.random(), Math.random());
                     mountain.add(accent);
+                    accentMeshes.push(accent);
                 }
 
             }
@@ -1688,6 +1690,7 @@
             crown.position.set(0, levels * 2 + 0.55, 0);
             crown.rotation.y = Math.random() * Math.PI;
             mountain.add(crown);
+            accentMeshes.push(crown);
 
             const baseRadius = levels * 3.25;
             for (let i = 0; i < 3; i++) {
@@ -1730,6 +1733,10 @@
 
             for (const layer of collisionLayers) {
                 platformBoxes.push(new THREE.Box3().setFromObject(layer));
+            }
+
+            for (const accent of accentMeshes) {
+                addSteppedMeshCollisionBoxes(accent, platformBoxes, 4, 0.05);
             }
 
             for (const rubble of rubbleMeshes) {
