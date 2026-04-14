@@ -462,24 +462,33 @@
 
         #powerupUI {
             position: absolute;
-            bottom: 60px;
+            bottom: 84px;
             left: 20px;
             display: none;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
             z-index: 100;
         }
 
         #doubleDamageStatus {
-            color: #ffaa00;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 8px 15px;
-            border-left: 5px solid #ffaa00;
-            border-radius: 2px;
-            font-family: 'Courier New', Courier, monospace;
-            font-weight: bold;
-            font-size: 20px;
-            text-shadow: 0 0 10px rgba(255, 170, 0, 0.5);
+            min-width: 210px;
+            padding: 12px 14px;
+            border: 1px solid rgba(255, 193, 72, 0.22);
+            border-radius: 14px;
+            background:
+                linear-gradient(180deg, rgba(255, 193, 72, 0.14), rgba(255, 255, 255, 0.03)),
+                rgba(22, 15, 6, 0.82);
+            color: #ffd27a;
+            font-weight: 900;
+            font-size: 16px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            text-shadow: 0 0 14px rgba(255, 193, 72, 0.18);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 14px 28px rgba(0, 0, 0, 0.22);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         /* Mobile Controls */
@@ -700,10 +709,13 @@
         }
 
         @keyframes rotatePromptPulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(0.94);
                 opacity: 0.72;
             }
+
             50% {
                 transform: scale(1);
                 opacity: 1;
@@ -764,15 +776,16 @@
 
             #powerupUI {
                 bottom: auto;
-                top: 75px;
+                top: 70px;
                 left: 10px;
                 gap: 3px;
             }
 
             #doubleDamageStatus {
-                font-size: 14px;
-                padding: 4px 10px;
-                border-left-width: 3px;
+                min-width: 0;
+                font-size: 11px;
+                padding: 8px 10px;
+                border-radius: 10px;
             }
 
             #ammoUI {
@@ -906,7 +919,8 @@
                 <div id="orientationArrow">↻</div>
             </div>
             <h2 id="orientationTitle">Rotate To Landscape</h2>
-            <p id="orientationText">This game is built for sideways play so the controls and aiming fit your screen properly.</p>
+            <p id="orientationText">This game is built for sideways play so the controls and aiming fit your screen
+                properly.</p>
             <div id="orientationBadge">Landscape Required</div>
             <p id="safariTip" style="display: none;">
                 Safari tip: use <b>Add to Home Screen</b> to hide browser bars.
@@ -966,6 +980,12 @@
         let posterHitCount = 0;
         let posterSecretUnlocked = false;
         const POSTER_SECRET_HIT_REQUIREMENT = 15;
+        const MAX_MEDKITS = 8;
+        const MAX_CIGARETTES = 12;
+        let medkitRespawnTimer = 0;
+        let cigaretteRespawnTimer = 0;
+        const MEDKIT_RESPAWN_INTERVAL = 8;
+        const CIGARETTE_RESPAWN_INTERVAL = 10;
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
@@ -1391,7 +1411,7 @@
             updateNukeUI();
             if (doubleDamageTimer > 0) {
                 powerupUI.style.display = 'flex';
-                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.innerText = `Double Damage ${doubleDamageTimer.toFixed(1)}s`;
             } else {
                 powerupUI.style.display = 'none';
             }
@@ -1422,6 +1442,8 @@
             recoilRotation = 0;
             announcementEl.style.display = 'none';
             bossBarContainer.style.display = 'none';
+            medkitRespawnTimer = 0;
+            cigaretteRespawnTimer = 0;
 
             if (nukeSphere) {
                 scene.remove(nukeSphere);
@@ -1433,7 +1455,13 @@
 
             targets.forEach(target => scene.remove(target));
             targets.length = 0;
+            medkits.forEach(medkit => scene.remove(medkit));
+            medkits.length = 0;
+            cigarettes.forEach(cigarette => scene.remove(cigarette));
+            cigarettes.length = 0;
             for (let i = 0; i < 15; i++) createHumanTarget();
+            for (let i = 0; i < MAX_MEDKITS; i++) createMedkit();
+            for (let i = 0; i < MAX_CIGARETTES; i++) createCigarette();
 
             controls.getObject().position.set(0, STANDING_EYE_HEIGHT, 0);
             camera.rotation.set(0, 0, 0);
@@ -1543,6 +1571,7 @@
 
         function createMountain(x, z, levels) {
             const mountain = new THREE.Group();
+            const collisionLayers = [];
             for (let i = 0; i < levels; i++) {
                 const size = (levels - i) * 6;
                 const h = 2; // step height
@@ -1555,6 +1584,7 @@
                 );
                 layer.rotation.y = (Math.random() - 0.5) * 0.08;
                 mountain.add(layer);
+                collisionLayers.push(layer);
                 platformMeshes.push(layer);
 
                 const accentCount = i === levels - 1 ? 3 : 2;
@@ -1577,9 +1607,6 @@
                     mountain.add(accent);
                 }
 
-                layer.updateMatrixWorld();
-                const box3 = new THREE.Box3().setFromObject(layer);
-                platformBoxes.push(box3);
             }
 
             const crownGeo = new THREE.CylinderGeometry(levels * 0.9, levels * 1.25, 1.1, 6);
@@ -1588,26 +1615,26 @@
             crown.rotation.y = Math.random() * Math.PI;
             mountain.add(crown);
 
-            const baseRadius = levels * 4.8;
-            for (let i = 0; i < 5; i++) {
-                const skirtGeo = new THREE.CircleGeometry(baseRadius * (1 + i * 0.14), 10 + i * 2);
+            const baseRadius = levels * 3.25;
+            for (let i = 0; i < 3; i++) {
+                const skirtGeo = new THREE.CircleGeometry(baseRadius * (1 + i * 0.08), 10 + i * 2);
                 const skirt = new THREE.Mesh(skirtGeo, mountainSkirtMaterials[i % mountainSkirtMaterials.length]);
                 skirt.rotation.x = -Math.PI / 2;
                 skirt.position.y = 0.03 + i * 0.012;
                 skirt.rotation.z = Math.random() * Math.PI;
                 skirt.scale.set(
-                    1 + Math.random() * 0.18,
-                    1 + Math.random() * 0.12,
-                    1 + Math.random() * 0.18
+                    1 + Math.random() * 0.08,
+                    1 + Math.random() * 0.06,
+                    1 + Math.random() * 0.08
                 );
                 mountain.add(skirt);
             }
 
-            for (let i = 0; i < 7; i++) {
+            for (let i = 0; i < 5; i++) {
                 const rubbleGeo = new THREE.DodecahedronGeometry(0.8 + Math.random() * 1.4, 0);
                 const rubble = new THREE.Mesh(rubbleGeo, mountainRockMaterials[(i + levels) % mountainRockMaterials.length]);
-                const angle = (i / 7) * Math.PI * 2 + Math.random() * 0.45;
-                const radius = baseRadius * (0.72 + Math.random() * 0.35);
+                const angle = (i / 5) * Math.PI * 2 + Math.random() * 0.45;
+                const radius = baseRadius * (0.78 + Math.random() * 0.16);
                 rubble.position.set(
                     Math.cos(angle) * radius,
                     0.45 + Math.random() * 0.35,
@@ -1624,6 +1651,11 @@
 
             mountain.position.set(x, 0, z);
             scene.add(mountain);
+            mountain.updateMatrixWorld(true);
+
+            for (const layer of collisionLayers) {
+                platformBoxes.push(new THREE.Box3().setFromObject(layer));
+            }
         }
 
         // mountains around the scene
@@ -1816,6 +1848,45 @@
         const posterWallBox = new THREE.Box3().setFromObject(posterWall);
         platformBoxes.push(posterWallBox); // Add hard collision boundary
 
+        function getRandomGroundSpawn(minRadius, maxRadius, clearanceRadius) {
+            for (let attempt = 0; attempt < 40; attempt++) {
+                const angle = Math.random() * Math.PI * 2;
+                const radius = minRadius + Math.random() * (maxRadius - minRadius);
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+                const point = new THREE.Vector3(x, 0, z);
+
+                let blocked = false;
+                for (const box of platformBoxes) {
+                    if (box.containsPoint(point)) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                if (blocked) continue;
+
+                for (const tree of treePositions) {
+                    if (Math.hypot(tree.x - x, tree.z - z) < tree.radius + clearanceRadius) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                if (blocked) continue;
+
+                for (const bush of bushPositions) {
+                    if (Math.hypot(bush.x - x, bush.z - z) < bush.radius + clearanceRadius * 0.7) {
+                        blocked = true;
+                        break;
+                    }
+                }
+                if (!blocked) {
+                    return { x, z };
+                }
+            }
+
+            return { x: 0, z: minRadius };
+        }
+
         // medkit system
         function createMedkit() {
             const medkit = new THREE.Group();
@@ -1851,14 +1922,8 @@
             const label = new THREE.Mesh(labelGeo, labelMat);
             medkit.add(label);
 
-            // Random position
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 15 + Math.random() * 60;
-            medkit.position.set(
-                Math.cos(angle) * radius,
-                0.5,
-                Math.sin(angle) * radius
-            );
+            const spawn = getRandomGroundSpawn(15, 75, 2.2);
+            medkit.position.set(spawn.x, 0.5, spawn.z);
 
             medkit.userData = { healAmount: 25 };
             scene.add(medkit);
@@ -1890,13 +1955,11 @@
             cherry.position.z = -0.5; // Adjusted offset for larger scale
             cig.add(cherry);
 
-            // Random position
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 10 + Math.random() * 80;
+            const spawn = getRandomGroundSpawn(12, 82, 1.8);
             cig.position.set(
-                Math.cos(angle) * radius,
-                0.3, // Raised slightly for better visibility
-                Math.sin(angle) * radius
+                spawn.x,
+                0.3,
+                spawn.z
             );
 
             scene.add(cig);
@@ -1904,8 +1967,8 @@
         }
 
         // Spawn initial items
-        for (let i = 0; i < 8; i++) createMedkit();
-        for (let i = 0; i < 12; i++) createCigarette();
+        for (let i = 0; i < MAX_MEDKITS; i++) createMedkit();
+        for (let i = 0; i < MAX_CIGARETTES; i++) createCigarette();
 
         // human targets
         function createHumanTarget() {
@@ -2472,8 +2535,6 @@
                         playPickupSound();
                         scene.remove(mk);
                         medkits.splice(i, 1);
-                        // Respawn a new one elsewhere
-                        createMedkit();
                     }
                 }
 
@@ -2485,15 +2546,34 @@
 
                     const dist = Math.hypot(cig.position.x - playerPos.x, cig.position.z - playerPos.z);
                     if (dist < 1.2) {
-                        doubleDamageTimer = 5;
+                        doubleDamageTimer = 10;
                         damageMultiplier = 2;
                         powerupUI.style.display = 'flex';
                         playPickupSound();
 
                         scene.remove(cig);
                         cigarettes.splice(i, 1);
-                        createCigarette();
                     }
+                }
+
+                if (medkits.length < MAX_MEDKITS) {
+                    medkitRespawnTimer += simulationDelta;
+                    if (medkitRespawnTimer >= MEDKIT_RESPAWN_INTERVAL) {
+                        createMedkit();
+                        medkitRespawnTimer = 0;
+                    }
+                } else {
+                    medkitRespawnTimer = 0;
+                }
+
+                if (cigarettes.length < MAX_CIGARETTES) {
+                    cigaretteRespawnTimer += simulationDelta;
+                    if (cigaretteRespawnTimer >= CIGARETTE_RESPAWN_INTERVAL) {
+                        createCigarette();
+                        cigaretteRespawnTimer = 0;
+                    }
+                } else {
+                    cigaretteRespawnTimer = 0;
                 }
 
                 // 2. Bullet Physics & Collision Detection
@@ -2560,7 +2640,7 @@
                             nukeChargeKills = NUKE_KILL_REQUIREMENT;
                             updateHealthUI();
                             updateNukeUI();
-                            showAnnouncement('POSTER SECRET UNLOCKED', 3000);
+                            showAnnouncement('CASTANIQ SECRET UNLOCKED', 3000);
                         }
                     }
 
@@ -2774,7 +2854,7 @@
             // Power-up Cooldown
             if (doubleDamageTimer > 0 && simulationDelta > 0) {
                 doubleDamageTimer -= simulationDelta;
-                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.innerText = `Double Damage ${doubleDamageTimer.toFixed(1)}s`;
                 if (doubleDamageTimer <= 0) {
                     doubleDamageTimer = 0;
                     damageMultiplier = 1;
