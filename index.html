@@ -781,6 +781,9 @@
         let isGameOver = false;
         let announcementTimeoutId = null;
         let announcementFadeTimeoutId = null;
+        let posterHitCount = 0;
+        let posterSecretUnlocked = false;
+        const POSTER_SECRET_HIT_REQUIREMENT = 15;
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
@@ -1125,6 +1128,40 @@
             }
         }
 
+        function segmentIntersectsBox(startPos, endPos, box) {
+            let tMin = 0;
+            let tMax = 1;
+
+            for (const axis of ['x', 'y', 'z']) {
+                const start = startPos[axis];
+                const end = endPos[axis];
+                const delta = end - start;
+                const min = box.min[axis];
+                const max = box.max[axis];
+
+                if (Math.abs(delta) < 0.000001) {
+                    if (start < min || start > max) return false;
+                    continue;
+                }
+
+                let t1 = (min - start) / delta;
+                let t2 = (max - start) / delta;
+
+                if (t1 > t2) {
+                    const temp = t1;
+                    t1 = t2;
+                    t2 = temp;
+                }
+
+                tMin = Math.max(tMin, t1);
+                tMax = Math.min(tMax, t2);
+
+                if (tMin > tMax) return false;
+            }
+
+            return true;
+        }
+
         function setMenuState(mode) {
             blocker.style.display = 'flex';
 
@@ -1184,6 +1221,9 @@
             spawnedBossThresholds.clear();
             isGameOver = false;
             isPaused = false;
+            posterHitCount = 0;
+            posterSecretUnlocked = false;
+            godMode = false;
             velocity.set(0, 0, 0);
             velocityY = 0;
             canJump = true;
@@ -1442,7 +1482,8 @@
         scene.add(posterWall);
 
         posterWall.updateMatrixWorld();
-        platformBoxes.push(new THREE.Box3().setFromObject(posterWall)); // Add hard collision boundary
+        const posterWallBox = new THREE.Box3().setFromObject(posterWall);
+        platformBoxes.push(posterWallBox); // Add hard collision boundary
 
         // medkit system
         function createMedkit() {
@@ -1777,18 +1818,16 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyN' && controls.isLocked) triggerNuke();
             if (e.code === 'KeyR' && controls.isLocked) startReload();
-            if (e.key === '+' || e.key === '=') {
-                godMode = !godMode;
-                if (godMode) {
-                    health = 100;
-                    updateHealthUI();
-                }
-            }
         });
 
         // --- SYSTEM HELPERS ---
         const btnNuke = document.getElementById('btnNuke');
         function updateNukeUI() {
+            if (godMode) {
+                nukeReady = true;
+                nukeChargeKills = NUKE_KILL_REQUIREMENT;
+            }
+
             const nukeChargePct = `${(Math.min(nukeChargeKills, NUKE_KILL_REQUIREMENT) / NUKE_KILL_REQUIREMENT) * 100}%`;
             btnNuke.style.setProperty('--nuke-fill', nukeChargePct);
 
@@ -1801,7 +1840,7 @@
             }
             if (nukeReady) {
                 nukeStatusEl.className = 'hud-card ready';
-                nukeTextEl.innerText = 'Ready';
+                nukeTextEl.innerText = godMode ? 'Infinite' : 'Ready';
                 btnNuke.style.setProperty('--nuke-fill', '100%');
                 if (isMobile) btnNuke.innerText = 'NUKE';
             } else {
@@ -1828,7 +1867,7 @@
             targets.splice(j, 1);
             score += t.userData.isBoss ? 500 : 10;
             scoreValueEl.innerText = score;
-            if (!nukeActive && !nukeReady) {
+            if (!godMode && !nukeActive && !nukeReady) {
                 nukeChargeKills = Math.min(NUKE_KILL_REQUIREMENT, nukeChargeKills + 1);
                 if (nukeChargeKills >= NUKE_KILL_REQUIREMENT) {
                     nukeReady = true;
@@ -2162,6 +2201,22 @@
                                 handleEnemyDeath(t, j);
                             }
                             break;
+                        }
+                    }
+
+                    if (!hit && !posterSecretUnlocked && segmentIntersectsBox(bulletPreviousPosition, b.position, posterWallBox)) {
+                        hit = true;
+                        posterHitCount++;
+
+                        if (posterHitCount >= POSTER_SECRET_HIT_REQUIREMENT) {
+                            posterSecretUnlocked = true;
+                            godMode = true;
+                            health = 100;
+                            nukeReady = true;
+                            nukeChargeKills = NUKE_KILL_REQUIREMENT;
+                            updateHealthUI();
+                            updateNukeUI();
+                            showAnnouncement('POSTER SECRET UNLOCKED', 3000);
                         }
                     }
 
