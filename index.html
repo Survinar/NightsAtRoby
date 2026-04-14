@@ -392,11 +392,13 @@
             text-align: center;
             text-shadow: 0 0 20px rgba(0, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8);
             display: none;
+            opacity: 0;
             z-index: 200;
             pointer-events: none;
             width: 100%;
             text-transform: uppercase;
             letter-spacing: 10px;
+            transition: opacity 0.22s ease;
         }
 
         #powerupUI {
@@ -748,6 +750,8 @@
         let gameStarted = false;
         let isPaused = false;
         let isGameOver = false;
+        let announcementTimeoutId = null;
+        let announcementFadeTimeoutId = null;
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
@@ -1588,13 +1592,29 @@
 
         // boss target
         function showAnnouncement(message, duration = 4000) {
+            if (announcementTimeoutId !== null) {
+                clearTimeout(announcementTimeoutId);
+            }
+            if (announcementFadeTimeoutId !== null) {
+                clearTimeout(announcementFadeTimeoutId);
+            }
+
             announcementEl.innerText = message;
             announcementEl.style.display = 'block';
+            announcementEl.style.opacity = '0';
+            void announcementEl.offsetWidth;
+            announcementEl.style.opacity = '1';
 
-            setTimeout(() => {
-                if (announcementEl.innerText === message) {
-                    announcementEl.style.display = 'none';
-                }
+            const fadeDelay = Math.max(0, duration - 220);
+            announcementFadeTimeoutId = setTimeout(() => {
+                announcementEl.style.opacity = '0';
+                announcementFadeTimeoutId = null;
+            }, fadeDelay);
+
+            announcementTimeoutId = setTimeout(() => {
+                announcementEl.style.display = 'none';
+                announcementEl.style.opacity = '0';
+                announcementTimeoutId = null;
             }, duration);
         }
 
