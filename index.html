@@ -472,9 +472,19 @@
             z-index: 100;
         }
 
+        #beerHealUI {
+            position: absolute;
+            top: 186px;
+            right: 20px;
+            display: none;
+            z-index: 100;
+            pointer-events: none;
+        }
+
         #doubleDamageStatus,
         #speedBoostStatus,
-        #infiniteAmmoStatus {
+        #infiniteAmmoStatus,
+        #beerHealStatus {
             min-width: 210px;
             padding: 12px 14px;
             border: 1px solid rgba(255, 193, 72, 0.22);
@@ -511,6 +521,15 @@
                 rgba(25, 18, 6, 0.84);
             color: #ffe9a4;
             text-shadow: 0 0 14px rgba(255, 225, 130, 0.22);
+        }
+
+        #beerHealStatus {
+            border-color: rgba(123, 255, 173, 0.34);
+            background:
+                linear-gradient(180deg, rgba(123, 255, 173, 0.18), rgba(255, 255, 255, 0.03)),
+                rgba(7, 24, 14, 0.84);
+            color: #9dffbf;
+            text-shadow: 0 0 14px rgba(123, 255, 173, 0.18);
         }
 
         /* Mobile Controls */
@@ -827,9 +846,15 @@
                 gap: 3px;
             }
 
+            #beerHealUI {
+                top: 96px;
+                right: 10px;
+            }
+
             #doubleDamageStatus,
             #speedBoostStatus,
-            #infiniteAmmoStatus {
+            #infiniteAmmoStatus,
+            #beerHealStatus {
                 min-width: 0;
                 font-size: 11px;
                 padding: 8px 10px;
@@ -943,6 +968,9 @@
         <div id="speedBoostStatus">👜 x2 SPEED: 5.0s</div>
         <div id="infiniteAmmoStatus">🔸 INF AMMO: 20.0s</div>
     </div>
+    <div id="beerHealUI">
+        <div id="beerHealStatus">🍺 +25 HP</div>
+    </div>
     <div id="announcement"></div>
     <div id="crosshair">+</div>
 
@@ -1044,6 +1072,7 @@
         let isGameOver = false;
         let announcementTimeoutId = null;
         let announcementFadeTimeoutId = null;
+        let beerHealTimeoutId = null;
         let posterHitCount = 0;
         let posterSecretUnlocked = false;
         const POSTER_SECRET_HIT_REQUIREMENT = 15;
@@ -1068,6 +1097,8 @@
         const doubleDamageStatus = document.getElementById('doubleDamageStatus');
         const speedBoostStatus = document.getElementById('speedBoostStatus');
         const infiniteAmmoStatus = document.getElementById('infiniteAmmoStatus');
+        const beerHealUI = document.getElementById('beerHealUI');
+        const beerHealStatus = document.getElementById('beerHealStatus');
         const announcementEl = document.getElementById('announcement');
         const BOSS_MAX_HP = 150;
         let recoilAmount = 0;
@@ -1522,6 +1553,22 @@
             healthBarFillEl.style.filter = clampedHealth <= 25 ? 'saturate(1.2) brightness(1.1)' : 'none';
         }
 
+        function showBeerHealPopup(amount) {
+            if (amount <= 0) return;
+
+            if (beerHealTimeoutId !== null) {
+                clearTimeout(beerHealTimeoutId);
+            }
+
+            beerHealStatus.innerText = `🍺 +${amount} HP`;
+            beerHealUI.style.display = 'block';
+
+            beerHealTimeoutId = setTimeout(() => {
+                beerHealUI.style.display = 'none';
+                beerHealTimeoutId = null;
+            }, 1400);
+        }
+
         function updatePowerupUI() {
             const hasDoubleDamage = doubleDamageTimer > 0;
             const hasSpeedBoost = speedBoostTimer > 0;
@@ -1581,11 +1628,17 @@
             recoilAmount = 0;
             recoilRotation = 0;
             announcementEl.style.display = 'none';
+            beerHealUI.style.display = 'none';
             bossBarContainer.style.display = 'none';
             medkitRespawnTimer = 0;
             cigaretteRespawnTimer = 0;
             speedBaggieRespawnTimer = 0;
             ammoRelicRespawnTimer = 0;
+
+            if (beerHealTimeoutId !== null) {
+                clearTimeout(beerHealTimeoutId);
+                beerHealTimeoutId = null;
+            }
 
             if (nukeSphere) {
                 scene.remove(nukeSphere);
@@ -2889,8 +2942,10 @@
 
                     const dist = Math.hypot(mk.position.x - playerPos.x, mk.position.z - playerPos.z);
                     if (dist < 1.5) {
+                        const restored = Math.min(mk.userData.healAmount, 100 - health);
                         health = Math.min(100, health + mk.userData.healAmount);
                         updateHealthUI();
+                        showBeerHealPopup(restored);
                         playPickupSound();
                         scene.remove(mk);
                         medkits.splice(i, 1);
