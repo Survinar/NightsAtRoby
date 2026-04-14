@@ -462,7 +462,7 @@
 
         #powerupUI {
             position: absolute;
-            bottom: 84px;
+            top: 170px;
             left: 20px;
             display: none;
             flex-direction: column;
@@ -786,7 +786,7 @@
 
             #powerupUI {
                 bottom: auto;
-                top: 108px;
+                top: 136px;
                 left: 10px;
                 gap: 3px;
             }
@@ -2061,13 +2061,15 @@
                 color: 0xf7fbff,
                 transparent: true,
                 opacity: 0.42,
-                shininess: 100
+                shininess: 100,
+                depthWrite: false
             });
             const flourMat = new THREE.MeshPhongMaterial({
                 color: 0xf3f0e7,
                 transparent: true,
                 opacity: 0.96,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
+                depthWrite: false
             });
             const sealMat = new THREE.MeshPhongMaterial({ color: 0x57b6ff });
 
@@ -2089,6 +2091,7 @@
             bagGeo.center();
 
             const outerBag = new THREE.Mesh(bagGeo, plasticMat);
+            outerBag.renderOrder = 1;
             baggie.add(outerBag);
 
             const flourShape = new THREE.Shape();
@@ -2106,6 +2109,7 @@
 
             const flourFill = new THREE.Mesh(flourGeo, flourMat);
             flourFill.position.z = 0.008;
+            flourFill.renderOrder = 2;
             baggie.add(flourFill);
 
             const sealGeo = new THREE.BoxGeometry(0.68, 0.07, 0.06);
