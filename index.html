@@ -741,25 +741,6 @@
             transform: translateY(-50%);
         }
 
-        #orientationArrow {
-            position: absolute;
-            top: 66%;
-            left: 62%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 64px;
-            height: 64px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 190, 92, 0.16), transparent 68%);
-            transform: translate(-50%, -50%);
-            font-size: 34px;
-            line-height: 1;
-            color: #ffc76f;
-            text-shadow: 0 0 18px rgba(255, 199, 111, 0.28);
-            animation: rotatePromptPulse 1.25s ease-in-out infinite;
-        }
-
         #orientationTitle {
             margin: 0 0 12px 0;
             font-size: 24px;
@@ -871,14 +852,17 @@
 
             #powerupUI {
                 bottom: auto;
-                top: 136px;
-                left: 10px;
+                top: 62px;
+                left: calc(10px + min(165px, calc(100vw - 132px)) + 8px);
+                right: auto;
+                align-items: flex-start;
                 gap: 3px;
             }
 
             #beerHealUI {
-                top: 96px;
-                right: 10px;
+                top: 10px;
+                left: calc(10px + min(165px, calc(100vw - 132px)) + 8px);
+                right: auto;
             }
 
             #doubleDamageStatus,
@@ -1036,7 +1020,6 @@
         <div id="orientationPanel">
             <div id="orientationGraphic">
                 <div id="orientationPhone"></div>
-                <div id="orientationArrow">↻</div>
             </div>
             <h2 id="orientationTitle">Rotate To Landscape</h2>
             <p id="orientationText">This game is built for sideways play so the controls and aiming fit your screen
