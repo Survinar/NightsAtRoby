@@ -1588,7 +1588,9 @@
             }
 
             if (hasInfiniteAmmo) {
-                infiniteAmmoStatus.innerText = `🔸 INF AMMO: ${infiniteAmmoTimer.toFixed(1)}s`;
+                infiniteAmmoStatus.innerText = Number.isFinite(infiniteAmmoTimer)
+                    ? `🔸 INF AMMO: ${infiniteAmmoTimer.toFixed(1)}s`
+                    : '🔸 INF AMMO: INFINITE';
             }
 
             powerupUI.style.display = hasDoubleDamage || hasSpeedBoost || hasInfiniteAmmo ? 'flex' : 'none';
@@ -2397,9 +2399,10 @@
             // Minimap Red Dot
             const dotGeo = new THREE.CircleGeometry(4, 8);
             dotGeo.rotateX(-Math.PI / 2);
-            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xff0000, depthTest: false }));
             dot.position.y = 150; // High above
             dot.layers.set(MINIMAP_LAYER);
+            dot.renderOrder = 3;
             humanGroup.add(dot);
 
             humanGroup.userData = {
@@ -2499,9 +2502,10 @@
             // Minimap Purple Dot
             const dotGeo = new THREE.CircleGeometry(6, 8);
             dotGeo.rotateX(-Math.PI / 2);
-            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: bossConfig.minimapColor }));
+            const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: bossConfig.minimapColor, depthTest: false }));
             dot.position.y = 50; // Scaled so local Y 50 = world 150
             dot.layers.set(MINIMAP_LAYER);
+            dot.renderOrder = 2;
             bossGroup.add(dot);
 
             bossGroup.userData = {
@@ -3109,9 +3113,15 @@
                             posterSecretUnlocked = true;
                             godMode = true;
                             health = 100;
+                            infiniteAmmoTimer = Number.POSITIVE_INFINITY;
+                            isReloading = false;
+                            reloadProgress = 0;
+                            ammo = maxAmmo;
                             nukeReady = true;
                             nukeChargeKills = NUKE_KILL_REQUIREMENT;
                             updateHealthUI();
+                            updateAmmoUI();
+                            updatePowerupUI();
                             updateNukeUI();
                             showAnnouncement('CASTANIQ SECRET UNLOCKED', 3000);
                         }
