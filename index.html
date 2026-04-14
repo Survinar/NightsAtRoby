@@ -1590,7 +1590,7 @@
             if (hasInfiniteAmmo) {
                 infiniteAmmoStatus.innerText = Number.isFinite(infiniteAmmoTimer)
                     ? `INFINITE AMMO: ${infiniteAmmoTimer.toFixed(1)}s`
-                    : 'INFINITE AMMO: INFINITE';
+                    : '';
             }
 
             powerupUI.style.display = hasDoubleDamage || hasSpeedBoost || hasInfiniteAmmo ? 'flex' : 'none';
