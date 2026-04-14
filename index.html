@@ -1580,17 +1580,17 @@
             infiniteAmmoStatus.style.display = hasInfiniteAmmo ? 'block' : 'none';
 
             if (hasDoubleDamage) {
-                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.innerText = `DOUBLE DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
             }
 
             if (hasSpeedBoost) {
-                speedBoostStatus.innerText = `👜 x2 SPEED: ${speedBoostTimer.toFixed(1)}s`;
+                speedBoostStatus.innerText = `DOUBLE SPEED: ${speedBoostTimer.toFixed(1)}s`;
             }
 
             if (hasInfiniteAmmo) {
                 infiniteAmmoStatus.innerText = Number.isFinite(infiniteAmmoTimer)
-                    ? `🔸 INF AMMO: ${infiniteAmmoTimer.toFixed(1)}s`
-                    : '🔸 INF AMMO: INFINITE';
+                    ? `INFINITE AMMO: ${infiniteAmmoTimer.toFixed(1)}s`
+                    : 'INFINITE AMMO: INFINITE';
             }
 
             powerupUI.style.display = hasDoubleDamage || hasSpeedBoost || hasInfiniteAmmo ? 'flex' : 'none';
