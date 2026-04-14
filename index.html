@@ -1555,12 +1555,13 @@
 
         function showBeerHealPopup(amount) {
             if (amount <= 0) return;
+            const roundedAmount = Math.round(amount);
 
             if (beerHealTimeoutId !== null) {
                 clearTimeout(beerHealTimeoutId);
             }
 
-            beerHealStatus.innerText = `🍺 +${amount} HP`;
+            beerHealStatus.innerText = `🍺 +${roundedAmount} HP`;
             beerHealUI.style.display = 'block';
 
             beerHealTimeoutId = setTimeout(() => {
