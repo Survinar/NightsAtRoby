@@ -470,7 +470,8 @@
             z-index: 100;
         }
 
-        #doubleDamageStatus {
+        #doubleDamageStatus,
+        #speedBoostStatus {
             min-width: 210px;
             padding: 12px 14px;
             border: 1px solid rgba(255, 193, 72, 0.22);
@@ -489,6 +490,15 @@
                 0 14px 28px rgba(0, 0, 0, 0.22);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
+        }
+
+        #speedBoostStatus {
+            border-color: rgba(240, 245, 255, 0.34);
+            background:
+                linear-gradient(180deg, rgba(240, 245, 255, 0.22), rgba(255, 255, 255, 0.04)),
+                rgba(18, 21, 26, 0.84);
+            color: #f4f7ff;
+            text-shadow: 0 0 14px rgba(240, 245, 255, 0.18);
         }
 
         /* Mobile Controls */
@@ -885,6 +895,7 @@
     </div>
     <div id="powerupUI">
         <div id="doubleDamageStatus">🚬 x2 DAMAGE: 5.0s</div>
+        <div id="speedBoostStatus">👜 x2 SPEED: 5.0s</div>
     </div>
     <div id="announcement"></div>
     <div id="crosshair">+</div>
@@ -970,8 +981,11 @@
         let nukeTimer = 0;
         const NUKE_KILL_REQUIREMENT = 20;
         const cigarettes = [];
+        const speedBaggies = [];
         let doubleDamageTimer = 0;
+        let speedBoostTimer = 0;
         let damageMultiplier = 1;
+        let movementBoostMultiplier = 1;
         let gameStarted = false;
         let isPaused = false;
         let isGameOver = false;
@@ -982,10 +996,13 @@
         const POSTER_SECRET_HIT_REQUIREMENT = 15;
         const MAX_MEDKITS = 8;
         const MAX_CIGARETTES = 12;
+        const MAX_SPEED_BAGGIES = 8;
         let medkitRespawnTimer = 0;
         let cigaretteRespawnTimer = 0;
+        let speedBaggieRespawnTimer = 0;
         const MEDKIT_RESPAWN_INTERVAL = 8;
         const CIGARETTE_RESPAWN_INTERVAL = 10;
+        const SPEED_BAGGIE_RESPAWN_INTERVAL = 11;
 
         const nukeFlash = document.getElementById('nukeFlash');
         const nukeStatusEl = document.getElementById('nukeStatus');
@@ -994,6 +1011,7 @@
         const bossBarFill = document.getElementById('bossBarFill');
         const powerupUI = document.getElementById('powerupUI');
         const doubleDamageStatus = document.getElementById('doubleDamageStatus');
+        const speedBoostStatus = document.getElementById('speedBoostStatus');
         const announcementEl = document.getElementById('announcement');
         const BOSS_MAX_HP = 150;
         let recoilAmount = 0;
@@ -1404,17 +1422,30 @@
             healthBarFillEl.style.filter = clampedHealth <= 25 ? 'saturate(1.2) brightness(1.1)' : 'none';
         }
 
+        function updatePowerupUI() {
+            const hasDoubleDamage = doubleDamageTimer > 0;
+            const hasSpeedBoost = speedBoostTimer > 0;
+
+            doubleDamageStatus.style.display = hasDoubleDamage ? 'block' : 'none';
+            speedBoostStatus.style.display = hasSpeedBoost ? 'block' : 'none';
+
+            if (hasDoubleDamage) {
+                doubleDamageStatus.innerText = `🚬 x2 DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+            }
+
+            if (hasSpeedBoost) {
+                speedBoostStatus.innerText = `👜 x2 SPEED: ${speedBoostTimer.toFixed(1)}s`;
+            }
+
+            powerupUI.style.display = hasDoubleDamage || hasSpeedBoost ? 'flex' : 'none';
+        }
+
         function syncHUD() {
             updateHealthUI();
             scoreValueEl.innerText = score;
             updateAmmoUI();
             updateNukeUI();
-            if (doubleDamageTimer > 0) {
-                powerupUI.style.display = 'flex';
-                doubleDamageStatus.innerText = `Double Damage ${doubleDamageTimer.toFixed(1)}s`;
-            } else {
-                powerupUI.style.display = 'none';
-            }
+            updatePowerupUI();
         }
 
         function resetGameState() {
@@ -1434,6 +1465,8 @@
             reloadProgress = 0;
             damageMultiplier = 1;
             doubleDamageTimer = 0;
+            speedBoostTimer = 0;
+            movementBoostMultiplier = 1;
             nukeReady = false;
             nukeChargeKills = 0;
             nukeActive = false;
@@ -1444,6 +1477,7 @@
             bossBarContainer.style.display = 'none';
             medkitRespawnTimer = 0;
             cigaretteRespawnTimer = 0;
+            speedBaggieRespawnTimer = 0;
 
             if (nukeSphere) {
                 scene.remove(nukeSphere);
@@ -1459,9 +1493,12 @@
             medkits.length = 0;
             cigarettes.forEach(cigarette => scene.remove(cigarette));
             cigarettes.length = 0;
+            speedBaggies.forEach(speedBaggie => scene.remove(speedBaggie));
+            speedBaggies.length = 0;
             for (let i = 0; i < 15; i++) createHumanTarget();
             for (let i = 0; i < MAX_MEDKITS; i++) createMedkit();
             for (let i = 0; i < MAX_CIGARETTES; i++) createCigarette();
+            for (let i = 0; i < MAX_SPEED_BAGGIES; i++) createSpeedBaggie();
 
             controls.getObject().position.set(0, STANDING_EYE_HEIGHT, 0);
             camera.rotation.set(0, 0, 0);
@@ -2052,9 +2089,78 @@
             cigarettes.push(cig);
         }
 
+        function createSpeedBaggie() {
+            const baggie = new THREE.Group();
+
+            const plasticMat = new THREE.MeshPhongMaterial({
+                color: 0xf7fbff,
+                transparent: true,
+                opacity: 0.42,
+                shininess: 100
+            });
+            const flourMat = new THREE.MeshPhongMaterial({
+                color: 0xf3f0e7,
+                transparent: true,
+                opacity: 0.96
+            });
+            const sealMat = new THREE.MeshPhongMaterial({ color: 0x57b6ff });
+
+            const bagShape = new THREE.Shape();
+            bagShape.moveTo(-0.42, -0.55);
+            bagShape.lineTo(0.42, -0.55);
+            bagShape.lineTo(0.34, 0.52);
+            bagShape.lineTo(-0.34, 0.52);
+            bagShape.closePath();
+
+            const bagGeo = new THREE.ExtrudeGeometry(bagShape, {
+                depth: 0.08,
+                bevelEnabled: true,
+                bevelSegments: 1,
+                steps: 1,
+                bevelSize: 0.02,
+                bevelThickness: 0.01
+            });
+            bagGeo.center();
+
+            const outerBag = new THREE.Mesh(bagGeo, plasticMat);
+            baggie.add(outerBag);
+
+            const flourShape = new THREE.Shape();
+            flourShape.moveTo(-0.3, -0.44);
+            flourShape.lineTo(0.3, -0.44);
+            flourShape.lineTo(0.23, 0.02);
+            flourShape.lineTo(-0.24, 0.02);
+            flourShape.closePath();
+
+            const flourGeo = new THREE.ExtrudeGeometry(flourShape, {
+                depth: 0.04,
+                bevelEnabled: false
+            });
+            flourGeo.center();
+
+            const flourFill = new THREE.Mesh(flourGeo, flourMat);
+            flourFill.position.z = 0.008;
+            baggie.add(flourFill);
+
+            const sealGeo = new THREE.BoxGeometry(0.68, 0.07, 0.06);
+            const seal = new THREE.Mesh(sealGeo, sealMat);
+            seal.position.y = 0.5;
+            baggie.add(seal);
+
+            baggie.rotation.x = -0.08;
+            baggie.rotation.z = (Math.random() - 0.5) * 0.18;
+
+            const spawn = getRandomGroundSpawn(15, 80, 1.8);
+            baggie.position.set(spawn.x, 0.38, spawn.z);
+
+            scene.add(baggie);
+            speedBaggies.push(baggie);
+        }
+
         // Spawn initial items
         for (let i = 0; i < MAX_MEDKITS; i++) createMedkit();
         for (let i = 0; i < MAX_CIGARETTES; i++) createCigarette();
+        for (let i = 0; i < MAX_SPEED_BAGGIES; i++) createSpeedBaggie();
 
         // human targets
         function createHumanTarget() {
@@ -2523,7 +2629,7 @@
                 const playerBodyHeight = isCrouching ? CROUCHING_EYE_HEIGHT : STANDING_EYE_HEIGHT;
                 camera.position.y = feetY + playerBodyHeight;
 
-                const speedMultiplier = isCrouching ? 0.5 : (isSprinting ? 2.2 : 1.0);
+                const speedMultiplier = (isCrouching ? 0.5 : (isSprinting ? 2.2 : 1.0)) * movementBoostMultiplier;
                 if (moveForward || moveBackward) velocity.z -= direction.z * 50.0 * speedMultiplier * simulationDelta;
                 if (moveLeft || moveRight) velocity.x -= direction.x * 50.0 * speedMultiplier * simulationDelta;
 
@@ -2634,11 +2740,28 @@
                     if (dist < 1.2) {
                         doubleDamageTimer = 10;
                         damageMultiplier = 2;
-                        powerupUI.style.display = 'flex';
+                        updatePowerupUI();
                         playPickupSound();
 
                         scene.remove(cig);
                         cigarettes.splice(i, 1);
+                    }
+                }
+
+                for (let i = speedBaggies.length - 1; i >= 0; i--) {
+                    const baggie = speedBaggies[i];
+                    baggie.rotation.y += 1.3 * simulationDelta;
+                    baggie.position.y = 0.38 + Math.sin(time * 0.004 + i * 0.7) * 0.09;
+
+                    const dist = Math.hypot(baggie.position.x - playerPos.x, baggie.position.z - playerPos.z);
+                    if (dist < 1.3) {
+                        speedBoostTimer = 10;
+                        movementBoostMultiplier = 2;
+                        updatePowerupUI();
+                        playPickupSound();
+
+                        scene.remove(baggie);
+                        speedBaggies.splice(i, 1);
                     }
                 }
 
@@ -2660,6 +2783,16 @@
                     }
                 } else {
                     cigaretteRespawnTimer = 0;
+                }
+
+                if (speedBaggies.length < MAX_SPEED_BAGGIES) {
+                    speedBaggieRespawnTimer += simulationDelta;
+                    if (speedBaggieRespawnTimer >= SPEED_BAGGIE_RESPAWN_INTERVAL) {
+                        createSpeedBaggie();
+                        speedBaggieRespawnTimer = 0;
+                    }
+                } else {
+                    speedBaggieRespawnTimer = 0;
                 }
 
                 // 2. Bullet Physics & Collision Detection
@@ -2940,12 +3073,20 @@
             // Power-up Cooldown
             if (doubleDamageTimer > 0 && simulationDelta > 0) {
                 doubleDamageTimer -= simulationDelta;
-                doubleDamageStatus.innerText = `Double Damage ${doubleDamageTimer.toFixed(1)}s`;
                 if (doubleDamageTimer <= 0) {
                     doubleDamageTimer = 0;
                     damageMultiplier = 1;
-                    powerupUI.style.display = 'none';
                 }
+                updatePowerupUI();
+            }
+
+            if (speedBoostTimer > 0 && simulationDelta > 0) {
+                speedBoostTimer -= simulationDelta;
+                if (speedBoostTimer <= 0) {
+                    speedBoostTimer = 0;
+                    movementBoostMultiplier = 1;
+                }
+                updatePowerupUI();
             }
 
             // Apply recoil & reload to gunGroup
