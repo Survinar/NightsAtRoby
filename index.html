@@ -786,12 +786,13 @@
 
             #powerupUI {
                 bottom: auto;
-                top: 70px;
+                top: 108px;
                 left: 10px;
                 gap: 3px;
             }
 
-            #doubleDamageStatus {
+            #doubleDamageStatus,
+            #speedBoostStatus {
                 min-width: 0;
                 font-size: 11px;
                 padding: 8px 10px;
@@ -2065,7 +2066,8 @@
             const flourMat = new THREE.MeshPhongMaterial({
                 color: 0xf3f0e7,
                 transparent: true,
-                opacity: 0.96
+                opacity: 0.96,
+                side: THREE.DoubleSide
             });
             const sealMat = new THREE.MeshPhongMaterial({ color: 0x57b6ff });
 
@@ -3129,10 +3131,11 @@
                         const dx = t.clientX - joystickStart.x;
                         const dy = t.clientY - joystickStart.y;
                         const dist = Math.min(60, Math.hypot(dx, dy));
+                        const normalizedDist = dist / 60;
                         const angle = Math.atan2(dy, dx);
 
-                        joystickVector.x = (Math.cos(angle) * dist) / 60;
-                        joystickVector.y = (Math.sin(angle) * dist) / 60;
+                        joystickVector.x = Math.cos(angle) * normalizedDist;
+                        joystickVector.y = Math.sin(angle) * normalizedDist;
 
                         joystickStick.style.transform = `translate(calc(-50% + ${Math.cos(angle) * dist}px), calc(-50% + ${Math.sin(angle) * dist}px))`;
 
@@ -3140,6 +3143,7 @@
                         moveBackward = joystickVector.y > 0.3;
                         moveLeft = joystickVector.x < -0.3;
                         moveRight = joystickVector.x > 0.3;
+                        isSprinting = normalizedDist >= 0.98;
                     } else if (t.identifier === touchLookId) {
                         // Look logic - manually rotate camera
                         const movementX = t.clientX - lastTouchLook.x;
@@ -3170,6 +3174,7 @@
                         joystickVector = { x: 0, y: 0 };
                         joystickStick.style.transform = 'translate(-50%, -50%)';
                         moveForward = moveBackward = moveLeft = moveRight = false;
+                        isSprinting = false;
                     } else if (t.identifier === touchLookId) {
                         touchLookId = null;
                     }
