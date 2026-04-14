@@ -571,6 +571,30 @@
             filter: brightness(1.08);
         }
 
+        #btnPause {
+            top: 20px;
+            left: 20px;
+            width: 56px;
+            height: 56px;
+            padding: 0;
+            border-radius: 18px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+                rgba(8, 12, 18, 0.82);
+            border-color: rgba(255, 255, 255, 0.2);
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .hamburger-line {
+            display: block;
+            width: 22px;
+            height: 2px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+        }
+
         #btnShoot {
             bottom: 26px;
             right: 22px;
@@ -810,6 +834,13 @@
                 height: 100px;
             }
 
+            #btnPause {
+                top: 14px;
+                left: 14px;
+                width: 52px;
+                height: 52px;
+            }
+
             #btnJump {
                 bottom: 124px;
                 right: 24px;
@@ -915,6 +946,11 @@
     </div>
 
     <div id="mobileControls">
+        <div id="btnPause" class="mobile-btn" aria-label="Pause menu">
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+        </div>
         <div id="joystickBase">
             <div id="joystickStick"></div>
         </div>
@@ -1034,6 +1070,7 @@
         const startButton = document.getElementById('startButton');
         const resumeButton = document.getElementById('resumeButton');
         const restartButton = document.getElementById('restartButton');
+        const btnPause = document.getElementById('btnPause');
         const healthValueEl = document.getElementById('healthValue');
         const healthBarFillEl = document.getElementById('healthBarFill');
         const scoreValueEl = document.getElementById('scoreValue');
@@ -3196,6 +3233,14 @@
             document.getElementById('btnJump').addEventListener('touchend', (e) => { e.preventDefault(); isJumping = false; });
             document.getElementById('btnReload').addEventListener('touchstart', (e) => { e.preventDefault(); startReload(); });
             document.getElementById('btnNuke').addEventListener('touchstart', (e) => { e.preventDefault(); triggerNuke(); });
+            btnPause.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (!controls.isLocked || isPaused || isGameOver) return;
+                resetMovementInputs();
+                controls.isLocked = false;
+                isPaused = true;
+                setMenuState('pause');
+            });
         }
 
         animate();
