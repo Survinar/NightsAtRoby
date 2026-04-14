@@ -591,15 +591,123 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: #111;
+            background:
+                radial-gradient(circle at top, rgba(255, 170, 76, 0.14), transparent 34%),
+                linear-gradient(180deg, rgba(8, 10, 14, 0.98), rgba(16, 18, 24, 0.98));
             color: white;
             display: none;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
             text-align: center;
-            padding: 20px;
+            padding: 24px;
+        }
+
+        #orientationPanel {
+            width: min(92vw, 360px);
+            padding: 28px 24px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+                rgba(9, 12, 18, 0.78);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 20px 50px rgba(0, 0, 0, 0.32);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        #orientationGraphic {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            margin: 0 auto 22px;
+        }
+
+        #orientationPhone {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 52px;
+            height: 82px;
+            border: 3px solid rgba(255, 255, 255, 0.88);
+            border-radius: 14px;
+            transform: translate(-50%, -50%) rotate(90deg);
+            box-shadow: 0 0 22px rgba(255, 176, 70, 0.18);
+        }
+
+        #orientationPhone::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 36px;
+            height: 58px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            transform: translate(-50%, -50%);
+        }
+
+        #orientationArrow {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 46px;
+            color: #ffbc57;
+            text-shadow: 0 0 18px rgba(255, 188, 87, 0.3);
+            animation: rotatePromptPulse 1.25s ease-in-out infinite;
+        }
+
+        #orientationTitle {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            line-height: 1.05;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        #orientationText {
+            font-size: 16px;
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.76);
+            max-width: 24ch;
+            margin: 0 auto;
+        }
+
+        #orientationBadge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 18px;
+            padding: 9px 14px;
+            border-radius: 999px;
+            background: rgba(255, 188, 87, 0.12);
+            color: #ffd188;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        #safariTip {
+            margin-top: 18px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #ffc76f;
+        }
+
+        @keyframes rotatePromptPulse {
+            0%, 100% {
+                transform: scale(0.94);
+                opacity: 0.72;
+            }
+            50% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         @media (orientation: portrait) {
@@ -792,11 +900,18 @@
     </div>
 
     <div id="orientationOverlay">
-        <h2>🔄 Landscape Mode Required</h2>
-        <p>Please rotate your device to play!</p>
-        <p id="safariTip" style="font-size: 14px; margin-top: 20px; color: #ffaa00; display: none;">
-            Safari Tip: Use <b>Add to Home Screen</b> to hide browser bars!
-        </p>
+        <div id="orientationPanel">
+            <div id="orientationGraphic">
+                <div id="orientationPhone"></div>
+                <div id="orientationArrow">↻</div>
+            </div>
+            <h2 id="orientationTitle">Rotate To Landscape</h2>
+            <p id="orientationText">This game is built for sideways play so the controls and aiming fit your screen properly.</p>
+            <div id="orientationBadge">Landscape Required</div>
+            <p id="safariTip" style="display: none;">
+                Safari tip: use <b>Add to Home Screen</b> to hide browser bars.
+            </p>
+        </div>
     </div>
 
     <script type="importmap">
@@ -1755,6 +1870,22 @@
             }, duration);
         }
 
+        function checkBossSpawnThresholds() {
+            for (const bossConfig of bossConfigs) {
+                if (score >= bossConfig.scoreThreshold && !spawnedBossThresholds.has(bossConfig.scoreThreshold)) {
+                    spawnedBossThresholds.add(bossConfig.scoreThreshold);
+                    createBossTarget(bossConfig);
+                    showAnnouncement(bossConfig.announcement);
+                }
+            }
+        }
+
+        function adjustScore(amount) {
+            score = Math.max(0, score + amount);
+            scoreValueEl.innerText = score;
+            checkBossSpawnThresholds();
+        }
+
         function createBossTarget(bossConfig) {
             const bossGroup = new THREE.Group();
 
@@ -1885,6 +2016,12 @@
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyN' && controls.isLocked) triggerNuke();
             if (e.code === 'KeyR' && controls.isLocked) startReload();
+            if (posterSecretUnlocked && (e.key === '+' || e.key === '=')) {
+                adjustScore(500);
+            }
+            if (posterSecretUnlocked && e.key === '-') {
+                adjustScore(-500);
+            }
         });
 
         // --- SYSTEM HELPERS ---
@@ -1932,22 +2069,13 @@
         function handleEnemyDeath(t, j) {
             scene.remove(t);
             targets.splice(j, 1);
-            score += t.userData.isBoss ? 500 : 10;
-            scoreValueEl.innerText = score;
+            adjustScore(t.userData.isBoss ? 500 : 10);
             if (!godMode && !nukeActive && !nukeReady) {
                 nukeChargeKills = Math.min(NUKE_KILL_REQUIREMENT, nukeChargeKills + 1);
                 if (nukeChargeKills >= NUKE_KILL_REQUIREMENT) {
                     nukeReady = true;
                 }
                 updateNukeUI();
-            }
-
-            for (const bossConfig of bossConfigs) {
-                if (score >= bossConfig.scoreThreshold && !spawnedBossThresholds.has(bossConfig.scoreThreshold)) {
-                    spawnedBossThresholds.add(bossConfig.scoreThreshold);
-                    createBossTarget(bossConfig);
-                    showAnnouncement(bossConfig.announcement);
-                }
             }
 
             if (t.userData.isBoss) {
