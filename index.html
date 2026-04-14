@@ -2980,7 +2980,12 @@
                                 isGameOver = true;
                                 isPaused = false;
                                 resetMovementInputs();
-                                controls.unlock();
+                                if (isMobile) {
+                                    controls.isLocked = false;
+                                    setMenuState('gameover');
+                                } else {
+                                    controls.unlock();
+                                }
                                 updateHealthUI();
                             }
                         }
