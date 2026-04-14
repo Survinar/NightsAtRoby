@@ -1231,6 +1231,45 @@
 
         const bulletGeo = new THREE.SphereGeometry(0.08, 8, 8);
         const bulletMat = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const bulletPreviousPosition = new THREE.Vector3();
+        const bulletTravel = new THREE.Vector3();
+        const bulletTravelStart = new THREE.Vector3();
+
+        function bulletHitsTarget(startPos, endPos, target) {
+            const radiusThreshold = (target.userData.isBoss ? 1.5 : 0.5) + 0.08;
+            const minY = target.position.y;
+            const maxY = minY + (target.userData.isBoss ? 6.6 : 2.2);
+
+            // Expand the cylinder vertically by the bullet radius so near-edge hits still count.
+            if (Math.max(startPos.y, endPos.y) < minY - 0.08 || Math.min(startPos.y, endPos.y) > maxY + 0.08) {
+                return false;
+            }
+
+            bulletTravel.subVectors(endPos, startPos);
+            const segmentLengthSq = bulletTravel.lengthSq();
+
+            // Fallback for extremely short steps.
+            if (segmentLengthSq === 0) {
+                const dx = endPos.x - target.position.x;
+                const dz = endPos.z - target.position.z;
+                return Math.hypot(dx, dz) <= radiusThreshold && endPos.y >= minY - 0.08 && endPos.y <= maxY + 0.08;
+            }
+
+            const segmentT = THREE.MathUtils.clamp(
+                ((target.position.x - startPos.x) * bulletTravel.x + (target.position.z - startPos.z) * bulletTravel.z) /
+                (bulletTravel.x * bulletTravel.x + bulletTravel.z * bulletTravel.z || segmentLengthSq),
+                0,
+                1
+            );
+
+            bulletTravelStart.copy(startPos).addScaledVector(bulletTravel, segmentT);
+
+            const dx = bulletTravelStart.x - target.position.x;
+            const dz = bulletTravelStart.z - target.position.z;
+            const closestDist2D = Math.hypot(dx, dz);
+
+            return closestDist2D <= radiusThreshold && bulletTravelStart.y >= minY - 0.08 && bulletTravelStart.y <= maxY + 0.08;
+        }
 
         function startReload() {
             if (isReloading || ammo === maxAmmo) return;
@@ -1258,6 +1297,7 @@
 
             bullet.userData.velocity = shootDir.multiplyScalar(80);
             bullet.userData.life = 100;
+            bullet.userData.previousPosition = bullet.position.clone();
 
             scene.add(bullet);
             bullets.push(bullet);
@@ -1471,26 +1511,18 @@
                 // 2. Bullet Physics & Collision Detection
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const b = bullets[i];
+                    bulletPreviousPosition.copy(b.userData.previousPosition || b.position);
                     b.position.addScaledVector(b.userData.velocity, delta);
+                    b.userData.previousPosition.copy(b.position);
                     b.userData.life--;
 
                     let hit = false;
 
-                    // Check collisions
+                    // Sweep the full bullet path for this frame so fast shots cannot tunnel through enemies.
                     for (let j = targets.length - 1; j >= 0; j--) {
                         const t = targets[j];
 
-                        // Fast mathematical cylinder collision (Ignores the high-altitude map icons)
-                        const dx = b.position.x - t.position.x;
-                        const dz = b.position.z - t.position.z;
-                        const dy = b.position.y - t.position.y;
-                        const dist2D = Math.hypot(dx, dz);
-
-                        // Humanoid Hitbox (Dynamic scale for boss)
-                        const radiusThreshold = t.userData.isBoss ? 1.5 : 0.5;
-                        const heightThreshold = t.userData.isBoss ? 6.6 : 2.2;
-
-                        if (dist2D < radiusThreshold && dy >= 0 && dy <= heightThreshold) {
+                        if (bulletHitsTarget(bulletPreviousPosition, b.position, t)) {
                             // Boss invincibility window (3 seconds)
                             if (t.userData.isBoss && performance.now() - t.userData.spawnTime < 3000) break;
 
