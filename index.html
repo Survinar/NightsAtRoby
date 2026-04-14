@@ -520,7 +520,9 @@
         #btnNuke {
             bottom: 26px;
             right: 136px;
-            background: rgba(120, 82, 20, 0.8);
+            --nuke-fill: 0%;
+            background:
+                linear-gradient(to top, rgba(255, 196, 77, 0.75) 0%, rgba(255, 196, 77, 0.75) var(--nuke-fill), rgba(120, 82, 20, 0.8) var(--nuke-fill), rgba(120, 82, 20, 0.8) 100%);
             border-color: rgba(255, 206, 103, 0.3);
         }
 
@@ -618,7 +620,7 @@
             }
 
             #btnJump {
-                bottom: 112px;
+                bottom: 124px;
                 right: 24px;
             }
 
@@ -765,12 +767,12 @@
         const CROUCHING_EYE_HEIGHT = 0.8;
         const PLAYER_HEAD_MARGIN = 0.2;
         const PLAYER_RADIUS = 0.4;
-        let nukeReady = true;
-        let nukeCooldown = 0;
+        let nukeReady = false;
+        let nukeChargeKills = 0;
         let nukeActive = false;
         let nukeSphere = null;
         let nukeTimer = 0;
-        const NUKE_COOLDOWN = 1; // secs
+        const NUKE_KILL_REQUIREMENT = 20;
         const cigarettes = [];
         let doubleDamageTimer = 0;
         let damageMultiplier = 1;
@@ -1190,8 +1192,8 @@
             reloadProgress = 0;
             damageMultiplier = 1;
             doubleDamageTimer = 0;
-            nukeReady = true;
-            nukeCooldown = 0;
+            nukeReady = false;
+            nukeChargeKills = 0;
             nukeActive = false;
             nukeTimer = 0;
             recoilAmount = 0;
@@ -1746,9 +1748,10 @@
         function triggerNuke() {
             if (!nukeReady || nukeActive) return;
             nukeReady = false;
+            nukeChargeKills = 0;
             nukeActive = true;
             nukeTimer = 0;
-            nukeCooldown = NUKE_COOLDOWN;
+            updateNukeUI();
 
             playExplosionSound();
 
@@ -1786,21 +1789,25 @@
         // --- SYSTEM HELPERS ---
         const btnNuke = document.getElementById('btnNuke');
         function updateNukeUI() {
+            const nukeChargePct = `${(Math.min(nukeChargeKills, NUKE_KILL_REQUIREMENT) / NUKE_KILL_REQUIREMENT) * 100}%`;
+            btnNuke.style.setProperty('--nuke-fill', nukeChargePct);
+
             if (nukeActive) {
                 nukeStatusEl.className = 'hud-card active';
                 nukeTextEl.innerText = 'Active';
+                btnNuke.style.setProperty('--nuke-fill', '100%');
                 if (isMobile) btnNuke.innerText = 'ACTIVE';
                 return;
             }
             if (nukeReady) {
                 nukeStatusEl.className = 'hud-card ready';
                 nukeTextEl.innerText = 'Ready';
+                btnNuke.style.setProperty('--nuke-fill', '100%');
                 if (isMobile) btnNuke.innerText = 'NUKE';
             } else {
-                const timer = Math.ceil(nukeCooldown);
                 nukeStatusEl.className = 'hud-card cooldown';
-                nukeTextEl.innerText = `Cooldown ${timer}s`;
-                if (isMobile) btnNuke.innerText = `NUKE\n(${timer}s)`;
+                nukeTextEl.innerText = `${nukeChargeKills}/${NUKE_KILL_REQUIREMENT} Kills`;
+                if (isMobile) btnNuke.innerText = 'NUKE';
             }
         }
 
@@ -1821,6 +1828,13 @@
             targets.splice(j, 1);
             score += t.userData.isBoss ? 500 : 10;
             scoreValueEl.innerText = score;
+            if (!nukeActive && !nukeReady) {
+                nukeChargeKills = Math.min(NUKE_KILL_REQUIREMENT, nukeChargeKills + 1);
+                if (nukeChargeKills >= NUKE_KILL_REQUIREMENT) {
+                    nukeReady = true;
+                }
+                updateNukeUI();
+            }
 
             for (const bossConfig of bossConfigs) {
                 if (score >= bossConfig.scoreThreshold && !spawnedBossThresholds.has(bossConfig.scoreThreshold)) {
@@ -2373,15 +2387,6 @@
             if (typeof gunGroup !== 'undefined') {
                 gunGroup.position.set(0.3, -0.3 + recoilAmount * 0.5 + reloadYOffset, -0.5 + recoilAmount);
                 gunGroup.rotation.x = -recoilRotation + reloadRotX;
-            }
-
-            // Nuke cooldown timer
-            if (!nukeReady && !nukeActive && simulationDelta > 0) {
-                nukeCooldown -= simulationDelta;
-                if (nukeCooldown <= 0) {
-                    nukeReady = true;
-                }
-                updateNukeUI();
             }
 
             // Nuke expansion animation
