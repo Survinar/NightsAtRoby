@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>5 Nights at Roby Bar</title>
     <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32x32.png">
@@ -306,9 +306,7 @@
             transition: opacity 0.1s;
         }
 
-        #nukeStatus {
-            color: #ffaa00;
-        }
+
 
         #minimap-border {
             position: absolute;
@@ -571,6 +569,10 @@
         }
 
         .mobile-btn {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            font-family: inherit;
             position: absolute;
             width: 80px;
             height: 80px;
@@ -1002,18 +1004,18 @@
     </div>
 
     <div id="mobileControls">
-        <div id="btnPause" class="mobile-btn" aria-label="Pause menu">
+        <button id="btnPause" class="mobile-btn" aria-label="Pause menu">
             <span class="hamburger-line"></span>
             <span class="hamburger-line"></span>
             <span class="hamburger-line"></span>
-        </div>
+        </button>
         <div id="joystickBase">
             <div id="joystickStick"></div>
         </div>
-        <div id="btnShoot" class="mobile-btn">Shoot</div>
-        <div id="btnJump" class="mobile-btn">Jump</div>
-        <div id="btnReload" class="mobile-btn">Reload</div>
-        <div id="btnNuke" class="mobile-btn">Nuke</div>
+        <button id="btnShoot" class="mobile-btn">Shoot</button>
+        <button id="btnJump" class="mobile-btn">Jump</button>
+        <button id="btnReload" class="mobile-btn">Reload</button>
+        <button id="btnNuke" class="mobile-btn">Nuke</button>
     </div>
 
     <div id="orientationOverlay">
@@ -1140,8 +1142,8 @@
 
         if (isMobile) {
             mobileControls.style.display = 'block';
-            menuMessage.innerText = 'Tap Start to enter fullscreen and begin';
-            menuHint.innerText = 'Use the on-screen controls to survive';
+            menuMessage.textContent = 'Tap Start to enter fullscreen and begin';
+            menuHint.textContent = 'Use the on-screen controls to survive';
 
             // Safari Standalone check
             const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -1222,16 +1224,23 @@
             osc.stop(audioCtx.currentTime + 0.2);
         }
 
-        function playExplosionSound() {
-            if (!audioCtx) return;
+        let cachedExplosionBuffer = null;
+        function getExplosionBuffer() {
+            if (cachedExplosionBuffer) return cachedExplosionBuffer;
             const bufferSize = audioCtx.sampleRate * 2;
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
             for (let i = 0; i < bufferSize; i++) {
                 data[i] = Math.random() * 2 - 1; // White noise
             }
+            cachedExplosionBuffer = buffer;
+            return cachedExplosionBuffer;
+        }
+
+        function playExplosionSound() {
+            if (!audioCtx) return;
             const noise = audioCtx.createBufferSource();
-            noise.buffer = buffer;
+            noise.buffer = getExplosionBuffer();
             const filter = audioCtx.createBiquadFilter();
             filter.type = 'lowpass';
             filter.frequency.setValueAtTime(400, audioCtx.currentTime);
@@ -1469,9 +1478,7 @@
                 let t2 = (max - start) / delta;
 
                 if (t1 > t2) {
-                    const temp = t1;
-                    t1 = t2;
-                    t2 = temp;
+                    [t1, t2] = [t2, t1];
                 }
 
                 tMin = Math.max(tMin, t1);
@@ -1530,9 +1537,9 @@
             blocker.style.display = 'flex';
 
             if (mode === 'start') {
-                menuTitle.innerText = '5 NIGHTS AT ROBY BAR';
-                menuMessage.innerText = isMobile ? 'Tap Start to enter fullscreen and begin' : 'Click Start to lock in and begin';
-                menuHint.innerText = isMobile ? 'Use the on-screen controls to survive' : '';
+                menuTitle.textContent = '5 NIGHTS AT ROBY BAR';
+                menuMessage.textContent = isMobile ? 'Tap Start to enter fullscreen and begin' : 'Click Start to lock in and begin';
+                menuHint.textContent = isMobile ? 'Use the on-screen controls to survive' : '';
                 startButton.style.display = 'block';
                 resumeButton.style.display = 'none';
                 restartButton.style.display = 'none';
@@ -1540,9 +1547,9 @@
             }
 
             if (mode === 'pause') {
-                menuTitle.innerText = 'Paused';
-                menuMessage.innerText = 'Take a breath. Your run is frozen until you resume.';
-                menuHint.innerText = isMobile ? 'Tap Resume when you are ready' : 'Click Resume to jump back in';
+                menuTitle.textContent = 'Paused';
+                menuMessage.textContent = 'Take a breath. Your run is frozen until you resume.';
+                menuHint.textContent = isMobile ? 'Tap Resume when you are ready' : 'Click Resume to jump back in';
                 startButton.style.display = 'none';
                 resumeButton.style.display = 'block';
                 restartButton.style.display = 'block';
@@ -1550,9 +1557,9 @@
             }
 
             if (mode === 'gameover') {
-                menuTitle.innerText = 'Game Over';
-                menuMessage.innerText = `You survived until scoring ${score}.`;
-                menuHint.innerText = 'Start a fresh run when you are ready';
+                menuTitle.textContent = 'Game Over';
+                menuMessage.textContent = `You survived until scoring ${score}.`;
+                menuHint.textContent = 'Start a fresh run when you are ready';
                 startButton.style.display = 'none';
                 resumeButton.style.display = 'none';
                 restartButton.style.display = 'block';
@@ -1561,7 +1568,7 @@
 
         function updateHealthUI() {
             const clampedHealth = Math.max(0, Math.min(100, health));
-            healthValueEl.innerText = Math.floor(clampedHealth);
+            healthValueEl.textContent = Math.floor(clampedHealth);
             healthBarFillEl.style.width = `${clampedHealth}%`;
             healthBarFillEl.style.filter = clampedHealth <= 25 ? 'saturate(1.2) brightness(1.1)' : 'none';
         }
@@ -1574,7 +1581,7 @@
                 clearTimeout(beerHealTimeoutId);
             }
 
-            beerHealStatus.innerText = `🍺 +${roundedAmount} HP`;
+            beerHealStatus.textContent = `🍺 +${roundedAmount} HP`;
             beerHealUI.style.display = 'block';
 
             beerHealTimeoutId = setTimeout(() => {
@@ -1593,17 +1600,17 @@
             infiniteAmmoStatus.style.display = hasInfiniteAmmo ? 'block' : 'none';
 
             if (hasDoubleDamage) {
-                doubleDamageStatus.innerText = `DOUBLE DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
+                doubleDamageStatus.textContent = `DOUBLE DAMAGE: ${doubleDamageTimer.toFixed(1)}s`;
             }
 
             if (hasSpeedBoost) {
-                speedBoostStatus.innerText = `DOUBLE SPEED: ${speedBoostTimer.toFixed(1)}s`;
+                speedBoostStatus.textContent = `DOUBLE SPEED: ${speedBoostTimer.toFixed(1)}s`;
             }
 
             if (hasInfiniteAmmo) {
-                infiniteAmmoStatus.innerText = Number.isFinite(infiniteAmmoTimer)
+                infiniteAmmoStatus.textContent = Number.isFinite(infiniteAmmoTimer)
                     ? `INFINITE AMMO: ${infiniteAmmoTimer.toFixed(1)}s`
-                    : '';
+                    : 'CASTANIQ';
             }
 
             powerupUI.style.display = hasDoubleDamage || hasSpeedBoost || hasInfiniteAmmo ? 'flex' : 'none';
@@ -1611,7 +1618,7 @@
 
         function syncHUD() {
             updateHealthUI();
-            scoreValueEl.innerText = score;
+            scoreValueEl.textContent = score;
             updateAmmoUI();
             updateNukeUI();
             updatePowerupUI();
@@ -1932,16 +1939,10 @@
         createMountain(50, 50, 4);
 
         // Map Borders (Transparent Walls)
-        const wallMatInvisible = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
         function createBorderWall(width, height, depth, x, y, z) {
-            const wallGeo = new THREE.BoxGeometry(width, height, depth);
-            const wall = new THREE.Mesh(wallGeo, wallMatInvisible);
-            wall.position.set(x, y, z);
-            scene.add(wall);
-
-            wall.updateMatrixWorld();
-            const box3 = new THREE.Box3().setFromObject(wall);
-            platformBoxes.push(box3);
+            const center = new THREE.Vector3(x, y, z);
+            const size = new THREE.Vector3(width, height, depth);
+            platformBoxes.push(new THREE.Box3().setFromCenterAndSize(center, size));
         }
 
         // 200x200 map, so edges are at +/- 100
@@ -2439,7 +2440,7 @@
                 clearTimeout(announcementFadeTimeoutId);
             }
 
-            announcementEl.innerText = message;
+            announcementEl.textContent = message;
             announcementEl.style.display = 'block';
             announcementEl.style.opacity = '0';
             void announcementEl.offsetWidth;
@@ -2470,7 +2471,7 @@
 
         function adjustScore(amount) {
             score = Math.max(0, score + amount);
-            scoreValueEl.innerText = score;
+            scoreValueEl.textContent = score;
             checkBossSpawnThresholds();
         }
 
@@ -2531,7 +2532,7 @@
                 spawnTime: performance.now() // For invincibility window
             };
 
-            document.getElementById('bossBarTitle').innerText = bossConfig.name;
+            document.getElementById('bossBarTitle').textContent = bossConfig.name;
             bossBarContainer.style.display = 'block';
             bossBarFill.style.width = '100%';
 
@@ -2626,33 +2627,33 @@
 
             if (nukeActive) {
                 nukeStatusEl.className = 'hud-card active';
-                nukeTextEl.innerText = 'Active';
+                nukeTextEl.textContent = 'Active';
                 btnNuke.style.setProperty('--nuke-fill', '100%');
-                if (isMobile) btnNuke.innerText = 'ACTIVE';
+                if (isMobile) btnNuke.textContent = 'ACTIVE';
                 return;
             }
             if (nukeReady) {
                 nukeStatusEl.className = 'hud-card ready';
-                nukeTextEl.innerText = godMode ? 'Infinite' : 'Ready';
+                nukeTextEl.textContent = godMode ? 'Infinite' : 'Ready';
                 btnNuke.style.setProperty('--nuke-fill', '100%');
-                if (isMobile) btnNuke.innerText = 'NUKE';
+                if (isMobile) btnNuke.textContent = 'NUKE';
             } else {
                 nukeStatusEl.className = 'hud-card cooldown';
-                nukeTextEl.innerText = `${nukeChargeKills}/${NUKE_KILL_REQUIREMENT} Kills`;
-                if (isMobile) btnNuke.innerText = 'NUKE';
+                nukeTextEl.textContent = `${nukeChargeKills}/${NUKE_KILL_REQUIREMENT} Kills`;
+                if (isMobile) btnNuke.textContent = 'NUKE';
             }
         }
 
         const btnReload = document.getElementById('btnReload');
         function updateAmmoUI() {
-            ammoValueEl.innerText = infiniteAmmoTimer > 0 ? 'INF' : ammo;
+            ammoValueEl.textContent = infiniteAmmoTimer > 0 ? 'INF' : ammo;
             if (isMobile) {
                 if (infiniteAmmoTimer > 0) {
-                    btnReload.innerText = 'NO\nRELOAD';
+                    btnReload.textContent = 'NO\nRELOAD';
                 } else if (isReloading) {
-                    btnReload.innerText = 'RELOAD...'; // Shorter for mobile
+                    btnReload.textContent = 'RELOAD...'; // Shorter for mobile
                 } else {
-                    btnReload.innerText = `RELOAD\n(${ammo}/15)`;
+                    btnReload.textContent = `RELOAD\n(${ammo}/15)`;
                 }
             }
         }
@@ -3381,7 +3382,7 @@
             }
 
             // Apply recoil & reload to gunGroup
-            if (typeof gunGroup !== 'undefined') {
+            if (gunGroup) {
                 gunGroup.position.set(0.3, -0.3 + recoilAmount * 0.5 + reloadYOffset, -0.5 + recoilAmount);
                 gunGroup.rotation.x = -recoilRotation + reloadRotX;
             }
@@ -3397,8 +3398,10 @@
 
                 // Camera shake
                 const shakeIntensity = Math.max(0, 0.15 - nukeTimer * 0.05);
-                camera.position.x += (Math.random() - 0.5) * shakeIntensity;
-                camera.position.z += (Math.random() - 0.5) * shakeIntensity;
+                const shakeX = (Math.random() - 0.5) * shakeIntensity;
+                const shakeZ = (Math.random() - 0.5) * shakeIntensity;
+                camera.position.x = controls.getObject().position.x + shakeX;
+                camera.position.z = controls.getObject().position.z + shakeZ;
 
                 // Kill all enemies caught in the blast radius
                 for (let j = targets.length - 1; j >= 0; j--) {
