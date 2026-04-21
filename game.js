@@ -1870,20 +1870,6 @@ function animate() {
         playerTop = camera.position.y + PLAYER_HEAD_MARGIN;
         resolvePlayerEnemyCollisions(playerPos, playerBottom, playerTop, velocityY);
 
-        const testVar = null;
-
-        // Player Tree Collision
-        for (let tree of treePositions) {
-            const dx = playerPos.x - tree.x;
-            const dz = playerPos.z - tree.z;
-            const dist = Math.hypot(dx, dz);
-            const minDist = 0.5 + tree.radius;
-            if (dist < minDist && dist > 0) {
-                const overlap = minDist - dist;
-                playerPos.x += (dx / dist) * overlap;
-                playerPos.z += (dz / dist) * overlap;
-            }
-        }
 
         // Player Tree Collision
         for (let tree of treePositions) {
