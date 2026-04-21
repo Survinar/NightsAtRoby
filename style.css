@@ -1,0 +1,914 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    user-select: none;
+    -webkit-user-select: none;
+    /* Safari unique selection disable */
+    -webkit-touch-callout: none;
+    /* Disable Safari long-press menu */
+    background: black;
+    touch-action: none;
+    /* Forcefully disable browser zoom/pan/scroll */
+}
+
+#ui {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    pointer-events: none;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(320px, calc(100vw - 40px));
+    color: white;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.hud-card {
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+        rgba(6, 8, 12, 0.74);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 14px 30px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.hud-label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.68);
+}
+
+.hud-value {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+}
+
+.hud-number {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.hud-unit {
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.62);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+#healthCard {
+    border-color: rgba(255, 88, 88, 0.28);
+    background:
+        linear-gradient(180deg, rgba(255, 90, 90, 0.14), rgba(255, 255, 255, 0.03)),
+        rgba(18, 6, 8, 0.82);
+}
+
+#healthValue {
+    color: #ff8b8b;
+}
+
+#healthBar {
+    margin-top: 10px;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+#healthBarFill {
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background:
+        linear-gradient(90deg, #7f1017 0%, #ff3b30 45%, #ff9b71 100%);
+    box-shadow: 0 0 18px rgba(255, 59, 48, 0.45);
+    transition: width 0.18s ease-out, filter 0.18s ease-out;
+}
+
+#scoreCard {
+    border-color: rgba(91, 255, 145, 0.2);
+    background:
+        linear-gradient(180deg, rgba(80, 255, 152, 0.12), rgba(255, 255, 255, 0.03)),
+        rgba(7, 17, 10, 0.8);
+}
+
+#scoreValue {
+    color: #8dffae;
+}
+
+#nukeStatus {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-color: rgba(255, 191, 71, 0.26);
+    background:
+        linear-gradient(180deg, rgba(255, 178, 43, 0.15), rgba(255, 255, 255, 0.03)),
+        rgba(21, 14, 4, 0.84);
+}
+
+#nukeTextWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#nukeLabel {
+    margin: 0;
+}
+
+#nukeText {
+    font-size: 18px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ffd277;
+}
+
+#nukeHotkey {
+    flex-shrink: 0;
+    padding: 7px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.08);
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+#nukeStatus.ready #nukeText {
+    color: #ffd277;
+}
+
+#nukeStatus.cooldown #nukeText {
+    color: #8f949d;
+}
+
+#nukeStatus.active #nukeText {
+    color: #fff2b3;
+    text-shadow: 0 0 18px rgba(255, 196, 64, 0.6);
+}
+
+#crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 16px;
+    pointer-events: none;
+    z-index: 100;
+    text-align: center;
+    line-height: 14px;
+    font-weight: 400;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+}
+
+#blocker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    z-index: 200;
+}
+
+#menuPanel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 32px 28px;
+    min-width: min(90vw, 420px);
+    background: rgba(0, 0, 0, 0.78);
+    border: 2px solid rgba(255, 255, 255, 0.14);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+}
+
+#menuTitle {
+    text-align: center;
+}
+
+#menuMessage {
+    text-align: center;
+    line-height: 1.5;
+    max-width: 28ch;
+}
+
+#menuButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.menu-btn {
+    width: 100%;
+    padding: 14px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.menu-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.menu-btn:active {
+    transform: translateY(0);
+}
+
+#menuHint {
+    font-size: 15px;
+    color: #aaa;
+}
+
+h1 {
+    margin: 0 0 10px 0;
+    font-size: 48px;
+}
+
+p {
+    font-size: 20px;
+    color: #ccc;
+}
+
+#nukeFlash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 150;
+    transition: opacity 0.1s;
+}
+
+
+
+#minimap-border {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    height: 200px;
+    border: 3px solid rgba(255, 255, 255, 0.7);
+    border-radius: 50%;
+    /* Made circular by default */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+    z-index: 100;
+    overflow: hidden;
+    /* Key for circular clipping */
+    background: rgba(0, 0, 0, 0.3);
+    /* Subtle backdrop */
+}
+
+#minimapCanvas {
+    width: 100%;
+    height: 100%;
+}
+
+#bossBarContainer {
+    position: fixed;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 500px;
+    height: 20px;
+    background: rgba(0, 0, 0, 0.7);
+    border: 2px solid #333;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+#bossBarFill {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to right, #880000, #ff0000);
+    transition: width 0.2s ease-out;
+}
+
+#bossBarTitle {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ff4444;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 18px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 4px black;
+    width: 100%;
+    text-align: center;
+}
+
+#ammoUI {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    z-index: 100;
+    width: 190px;
+    color: white;
+    pointer-events: none;
+}
+
+#ammoCard {
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 14px;
+    background:
+        linear-gradient(180deg, rgba(112, 204, 255, 0.1), rgba(255, 255, 255, 0.03)),
+        rgba(7, 11, 18, 0.78);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 14px 30px rgba(0, 0, 0, 0.24);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#ammoLabel {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+}
+
+#ammoReadout {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 8px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+}
+
+#ammoValue {
+    font-size: 34px;
+    line-height: 0.95;
+    color: #90d7ff;
+    text-shadow: 0 0 18px rgba(84, 185, 255, 0.24);
+}
+
+#ammoDivider {
+    font-size: 20px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+#ammoReserve {
+    font-size: 19px;
+    line-height: 1.05;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+#ammoHint {
+    margin-top: 8px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.38);
+    text-align: right;
+}
+
+#announcement {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #ff0000;
+    font-family: 'Arial Black', sans-serif;
+    font-size: 64px;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 1), 0 0 30px rgba(255, 0, 0, 0.8);
+    display: none;
+    opacity: 0;
+    z-index: 200;
+    pointer-events: none;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 10px;
+    transition: opacity 0.22s ease;
+}
+
+#powerupUI {
+    position: absolute;
+    top: 236px;
+    right: 20px;
+    display: none;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    z-index: 100;
+}
+
+#beerHealUI {
+    position: absolute;
+    top: 186px;
+    right: 20px;
+    display: none;
+    z-index: 100;
+    pointer-events: none;
+}
+
+#doubleDamageStatus,
+#speedBoostStatus,
+#infiniteAmmoStatus,
+#beerHealStatus {
+    min-width: 210px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 193, 72, 0.22);
+    border-radius: 14px;
+    background:
+        linear-gradient(180deg, rgba(255, 193, 72, 0.14), rgba(255, 255, 255, 0.03)),
+        rgba(22, 15, 6, 0.82);
+    color: #ffd27a;
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-shadow: 0 0 14px rgba(255, 193, 72, 0.18);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 14px 28px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#speedBoostStatus {
+    border-color: rgba(240, 245, 255, 0.34);
+    background:
+        linear-gradient(180deg, rgba(240, 245, 255, 0.22), rgba(255, 255, 255, 0.04)),
+        rgba(18, 21, 26, 0.84);
+    color: #f4f7ff;
+    text-shadow: 0 0 14px rgba(240, 245, 255, 0.18);
+}
+
+#infiniteAmmoStatus {
+    border-color: rgba(255, 225, 130, 0.34);
+    background:
+        linear-gradient(180deg, rgba(255, 225, 130, 0.2), rgba(255, 255, 255, 0.03)),
+        rgba(25, 18, 6, 0.84);
+    color: #ffe9a4;
+    text-shadow: 0 0 14px rgba(255, 225, 130, 0.22);
+}
+
+#beerHealStatus {
+    border-color: rgba(123, 255, 173, 0.34);
+    background:
+        linear-gradient(180deg, rgba(123, 255, 173, 0.18), rgba(255, 255, 255, 0.03)),
+        rgba(7, 24, 14, 0.84);
+    color: #9dffbf;
+    text-shadow: 0 0 14px rgba(123, 255, 173, 0.18);
+}
+
+/* Mobile Controls */
+#mobileControls {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    display: none;
+    z-index: 150;
+}
+
+#joystickBase {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    width: 120px;
+    height: 120px;
+    background: rgba(12, 16, 22, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 50%;
+    box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
+    pointer-events: auto;
+}
+
+#joystickStick {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 50%;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.14);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.mobile-btn {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    font-family: inherit;
+    position: absolute;
+    width: 80px;
+    height: 80px;
+    background: rgba(10, 13, 19, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.15;
+    padding: 7px;
+    box-sizing: border-box;
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    pointer-events: auto;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.2);
+    transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s ease;
+}
+
+.mobile-btn:active {
+    transform: scale(0.95);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.16);
+    filter: brightness(1.08);
+}
+
+#btnPause {
+    top: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 14px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+        rgba(8, 12, 18, 0.82);
+    border-color: rgba(255, 255, 255, 0.2);
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hamburger-line {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+
+#btnShoot {
+    bottom: 26px;
+    right: 22px;
+    width: 100px;
+    height: 100px;
+    background: rgba(124, 28, 28, 0.78);
+    border-color: rgba(255, 120, 120, 0.34);
+    box-shadow: 0 14px 22px rgba(61, 6, 6, 0.24);
+}
+
+#btnJump {
+    bottom: 128px;
+    right: 32px;
+    background: rgba(18, 70, 108, 0.74);
+    border-color: rgba(123, 214, 255, 0.26);
+}
+
+#btnReload {
+    bottom: 128px;
+    right: 128px;
+    background: rgba(42, 42, 42, 0.74);
+    border-color: rgba(226, 226, 226, 0.2);
+}
+
+#btnNuke {
+    bottom: 26px;
+    right: 136px;
+    --nuke-fill: 0%;
+    background:
+        linear-gradient(to top, rgba(255, 196, 77, 0.75) 0%, rgba(255, 196, 77, 0.75) var(--nuke-fill), rgba(120, 82, 20, 0.8) var(--nuke-fill), rgba(120, 82, 20, 0.8) 100%);
+    border-color: rgba(255, 206, 103, 0.3);
+}
+
+#orientationOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+        radial-gradient(circle at top, rgba(255, 180, 83, 0.18), transparent 32%),
+        radial-gradient(circle at bottom, rgba(112, 204, 255, 0.12), transparent 30%),
+        linear-gradient(180deg, rgba(7, 10, 15, 0.985), rgba(14, 18, 26, 0.985));
+    color: white;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    text-align: center;
+    padding: 24px;
+}
+
+#orientationPanel {
+    width: min(92vw, 380px);
+    padding: 30px 26px 28px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.03)),
+        rgba(6, 8, 12, 0.82);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 24px 54px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+#orientationGraphic {
+    position: relative;
+    width: 136px;
+    height: 118px;
+    margin: 0 auto 20px;
+}
+
+#orientationPhone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 58px;
+    height: 92px;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+        rgba(14, 18, 25, 0.72);
+    transform: translate(-50%, -50%) rotate(90deg);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 14px 26px rgba(0, 0, 0, 0.28);
+}
+
+#orientationPhone::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 66px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    transform: translate(-50%, -50%);
+}
+
+#orientationPhone::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(100% - 11px);
+    width: 4px;
+    height: 20px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.28);
+    transform: translateY(-50%);
+}
+
+#orientationTitle {
+    margin: 0 0 12px 0;
+    font-size: 24px;
+    line-height: 1.08;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 900;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+#orientationText {
+    font-size: 15px;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.72);
+    max-width: 26ch;
+    margin: 0 auto;
+}
+
+#orientationBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background:
+        linear-gradient(180deg, rgba(255, 188, 87, 0.14), rgba(255, 255, 255, 0.03)),
+        rgba(21, 14, 4, 0.8);
+    border: 1px solid rgba(255, 188, 87, 0.24);
+    color: #ffd277;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+#safariTip {
+    margin-top: 18px;
+    font-size: 13px;
+    line-height: 1.45;
+    color: #ffc76f;
+}
+
+@keyframes rotatePromptPulse {
+
+    0%,
+    100% {
+        transform: scale(0.94);
+        opacity: 0.72;
+    }
+
+    50% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@media (orientation: portrait) {
+    #orientationOverlay {
+        display: flex;
+    }
+}
+
+/* Mobile Scale Adjustments */
+@media screen and (max-width: 900px) {
+    #ui h2 {
+        font-size: 16px;
+    }
+
+    #ui {
+        top: 10px;
+        left: 10px;
+        width: min(165px, calc(100vw - 132px));
+        gap: 6px;
+    }
+
+    .hud-card {
+        padding: 7px 9px;
+        border-radius: 10px;
+    }
+
+    .hud-label {
+        font-size: 8px;
+        margin-bottom: 3px;
+        letter-spacing: 0.14em;
+    }
+
+    .hud-number {
+        font-size: 17px;
+    }
+
+    .hud-value {
+        gap: 5px;
+    }
+
+    .hud-unit {
+        font-size: 9px;
+        letter-spacing: 0.08em;
+    }
+
+    #healthBar {
+        margin-top: 6px;
+        height: 8px;
+    }
+
+    #nukeStatus {
+        display: none;
+    }
+
+    #powerupUI {
+        bottom: auto;
+        top: 10px;
+        left: calc(10px + min(165px, calc(100vw - 132px)) + 8px);
+        right: auto;
+        align-items: flex-start;
+        gap: 3px;
+    }
+
+    #beerHealUI {
+        top: 84px;
+        left: calc(10px + min(165px, calc(100vw - 132px)) + 8px);
+        right: auto;
+    }
+
+    #doubleDamageStatus,
+    #speedBoostStatus,
+    #infiniteAmmoStatus,
+    #beerHealStatus {
+        min-width: 0;
+        font-size: 11px;
+        padding: 8px 10px;
+        border-radius: 10px;
+    }
+
+    #ammoUI {
+        display: none;
+    }
+
+    #btnShoot {
+        bottom: 18px;
+        right: 18px;
+        width: 100px;
+        height: 100px;
+    }
+
+    #btnPause {
+        top: 14px;
+        right: 14px;
+        width: 40px;
+        height: 40px;
+    }
+
+    #btnJump {
+        bottom: 124px;
+        right: 24px;
+    }
+
+    #btnReload {
+        bottom: 112px;
+        right: 118px;
+    }
+
+    #btnNuke {
+        bottom: 18px;
+        right: 124px;
+    }
+
+    .mobile-btn {
+        font-size: 9px;
+        padding: 6px;
+    }
+
+    #bossBarContainer {
+        width: 300px;
+        top: 20px;
+    }
+
+    #minimap-border {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.3);
+        border-width: 2px;
+        top: 10px;
+        right: 10px;
+    }
+}
